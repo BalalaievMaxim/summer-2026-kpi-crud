@@ -1,14 +1,17 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
 using GymManagement.Core.Entities;
+using Microsoft.EntityFrameworkCore;
+
 namespace GymManagement.Infrastructure.Data;
 
-public partial class GymDbContext : DbContext
+public partial class GymManagementContext : DbContext
 {
-    public GymDbContext()
+    public GymManagementContext()
     {
     }
 
-    public GymDbContext(DbContextOptions<GymDbContext> options)
+    public GymManagementContext(DbContextOptions<GymManagementContext> options)
         : base(options)
     {
     }
@@ -23,12 +26,14 @@ public partial class GymDbContext : DbContext
 
     public virtual DbSet<Enrollment> Enrollments { get; set; }
 
+    public virtual DbSet<Facilityzone> Facilityzones { get; set; }
+
     public virtual DbSet<Invoice> Invoices { get; set; }
 
     public virtual DbSet<Membership> Memberships { get; set; }
 
     public virtual DbSet<Membershipplan> Membershipplans { get; set; }
-    
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Class>(entity =>
@@ -41,9 +46,6 @@ public partial class GymDbContext : DbContext
             entity.Property(e => e.Capacity).HasColumnName("capacity");
             entity.Property(e => e.ClassTypeId).HasColumnName("class_type_id");
             entity.Property(e => e.CoachId).HasColumnName("coach_id");
-            entity.Property(e => e.CurrentEnrollment)
-                .HasDefaultValue(0)
-                .HasColumnName("current_enrollment");
             entity.Property(e => e.EndTime)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("end_time");
@@ -158,6 +160,20 @@ public partial class GymDbContext : DbContext
                 .HasConstraintName("enrollment_client_id_fkey");
         });
 
+        modelBuilder.Entity<Facilityzone>(entity =>
+        {
+            entity.HasKey(e => e.ZoneId).HasName("facilityzone_pkey");
+
+            entity.ToTable("facilityzone");
+
+            entity.HasIndex(e => e.Name, "facilityzone_name_key").IsUnique();
+
+            entity.Property(e => e.ZoneId).HasColumnName("zone_id");
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .HasColumnName("name");
+        });
+
         modelBuilder.Entity<Invoice>(entity =>
         {
             entity.HasKey(e => e.InvoiceId).HasName("invoice_pkey");
@@ -199,9 +215,6 @@ public partial class GymDbContext : DbContext
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.PlanId).HasColumnName("plan_id");
-            entity.Property(e => e.Price)
-                .HasPrecision(10, 2)
-                .HasColumnName("price");
             entity.Property(e => e.StartDate).HasColumnName("start_date");
 
             entity.HasOne(d => d.Client).WithMany(p => p.Memberships)
@@ -223,9 +236,6 @@ public partial class GymDbContext : DbContext
             entity.HasIndex(e => e.Name, "membershipplan_name_key").IsUnique();
 
             entity.Property(e => e.PlanId).HasColumnName("plan_id");
-            entity.Property(e => e.Access)
-                .HasMaxLength(100)
-                .HasColumnName("access");
             entity.Property(e => e.DurationMonths).HasColumnName("duration_months");
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
@@ -233,6 +243,23 @@ public partial class GymDbContext : DbContext
             entity.Property(e => e.Price)
                 .HasPrecision(10, 2)
                 .HasColumnName("price");
+
+            entity.HasMany(d => d.Zones).WithMany(p => p.Plans)
+                .UsingEntity<Dictionary<string, object>>(
+                    "Planaccess",
+                    r => r.HasOne<Facilityzone>().WithMany()
+                        .HasForeignKey("ZoneId")
+                        .HasConstraintName("planaccess_zone_id_fkey"),
+                    l => l.HasOne<Membershipplan>().WithMany()
+                        .HasForeignKey("PlanId")
+                        .HasConstraintName("planaccess_plan_id_fkey"),
+                    j =>
+                    {
+                        j.HasKey("PlanId", "ZoneId").HasName("planaccess_pkey");
+                        j.ToTable("planaccess");
+                        j.IndexerProperty<int>("PlanId").HasColumnName("plan_id");
+                        j.IndexerProperty<int>("ZoneId").HasColumnName("zone_id");
+                    });
         });
 
         OnModelCreatingPartial(modelBuilder);

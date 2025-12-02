@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace GymManagement.Core.Entities;
 
@@ -15,8 +16,6 @@ public partial class Class
     public DateTime EndTime { get; set; }
 
     public int Capacity { get; set; }
-
-    public int? CurrentEnrollment { get; set; }
 
     public virtual Classtype ClassType { get; set; } = null!;
 

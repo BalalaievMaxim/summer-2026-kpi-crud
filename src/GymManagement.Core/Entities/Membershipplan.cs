@@ -9,11 +9,11 @@ public partial class Membershipplan
 
     public string Name { get; set; } = null!;
 
-    public string Access { get; set; } = null!;
-
     public int DurationMonths { get; set; }
 
     public decimal Price { get; set; }
 
     public virtual ICollection<Membership> Memberships { get; set; } = new List<Membership>();
+
+    public virtual ICollection<Facilityzone> Zones { get; set; } = new List<Facilityzone>();
 }

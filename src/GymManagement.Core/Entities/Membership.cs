@@ -15,8 +15,6 @@ public partial class Membership
 
     public DateOnly EndDate { get; set; }
 
-    public decimal Price { get; set; }
-
     public bool? IsActive { get; set; }
 
     public virtual Client Client { get; set; } = null!;
