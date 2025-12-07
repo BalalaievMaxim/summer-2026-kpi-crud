@@ -19,10 +19,12 @@ public class MembershipRepository(GymManagementContext context) : IMembershipRep
             .ToListAsync();
     }
 
-    public async Task<Membershipplan> GetMembershipPlanByIdAsync(int planId)
+    public async Task MarkAsActiveMembershipAsync(int membershipId)
     {
-        return await context.Membershipplans
-            .Where(m => m.PlanId == planId)
-            .FirstAsync();
+        await context.Memberships
+            .Where(m =>  m.MembershipId == membershipId)
+            .ExecuteUpdateAsync(m => m.
+                SetProperty(e => e.IsActive, true));
     }
+    
 }
