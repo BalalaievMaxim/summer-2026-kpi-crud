@@ -195,7 +195,8 @@ public partial class GymManagementContext : DbContext
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
                 .HasDefaultValueSql("'pending'::character varying")
-                .HasColumnName("status");
+                .HasColumnName("status")
+                .HasConversion<string>();
 
             entity.HasOne(d => d.Client).WithMany(p => p.Invoices)
                 .HasForeignKey(d => d.ClientId)
@@ -261,7 +262,6 @@ public partial class GymManagementContext : DbContext
                         j.IndexerProperty<int>("ZoneId").HasColumnName("zone_id");
                     });
         });
-
         OnModelCreatingPartial(modelBuilder);
     }
 

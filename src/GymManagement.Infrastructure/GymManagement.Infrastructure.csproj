@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\GymManagement.Application\GymManagement.Application.csproj" />
     <ProjectReference Include="..\GymManagement.Core\GymManagement.Core.csproj" />
   </ItemGroup>
 

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GymManagement.Core", "GymMa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GymManagement.Infrastructure", "GymManagement.Infrastructure\GymManagement.Infrastructure.csproj", "{7DA87811-1B9D-4996-8D6F-4E00C009C1E2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GymManagement.Application", "GymManagement.Application\GymManagement.Application.csproj", "{6019D58D-DA91-4E77-9BB9-066C74B66CDC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{7DA87811-1B9D-4996-8D6F-4E00C009C1E2}.Release|x64.Build.0 = Release|Any CPU
 		{7DA87811-1B9D-4996-8D6F-4E00C009C1E2}.Release|x86.ActiveCfg = Release|Any CPU
 		{7DA87811-1B9D-4996-8D6F-4E00C009C1E2}.Release|x86.Build.0 = Release|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Debug|x64.Build.0 = Debug|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Debug|x86.Build.0 = Debug|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Release|x64.ActiveCfg = Release|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Release|x64.Build.0 = Release|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Release|x86.ActiveCfg = Release|Any CPU
+		{6019D58D-DA91-4E77-9BB9-066C74B66CDC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
