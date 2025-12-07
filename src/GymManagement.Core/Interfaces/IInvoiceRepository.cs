@@ -4,7 +4,7 @@ namespace GymManagement.Core.Interfaces;
 
 public interface IInvoiceRepository
 {
-    public Task CreateInvoiceAsync(Invoice invoice);
-
     public Task MarkAsPaidAsync(int invoiceId);
+    
+    public Task AddAsync(Invoice invoice);
 }

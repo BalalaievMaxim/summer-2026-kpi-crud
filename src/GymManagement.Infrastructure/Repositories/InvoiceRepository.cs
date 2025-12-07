@@ -8,17 +8,17 @@ namespace GymManagement.Infrastructure.Repositories;
 
 public class InvoiceRepository (GymManagementContext context) : IInvoiceRepository
 {
-    public async Task CreateInvoiceAsync(Invoice invoice)
-    {
-        await context.Invoices.AddAsync(invoice);
-        await context.SaveChangesAsync();
-    }
-
+    
     public async Task MarkAsPaidAsync(int invoiceId)
     {
         await context.Invoices
             .Where(i => i.InvoiceId == invoiceId)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(i => i.Status, nameof(PaymentStatus.Paid).ToLower()));
+    }
+
+    public async Task AddAsync(Invoice invoice)
+    {
+        await context.Invoices.AddAsync(invoice);
     }
 }

@@ -7,12 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\" />
-    <Folder Include="Services\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\GymManagement.Core\GymManagement.Core.csproj" />
+    <ProjectReference Include="..\GymManagement.Infrastructure\GymManagement.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
