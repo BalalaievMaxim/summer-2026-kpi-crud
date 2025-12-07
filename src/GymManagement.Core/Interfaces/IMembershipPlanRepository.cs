@@ -7,4 +7,6 @@ public interface IMembershipPlanRepository
     public Task AddAsync (Membershipplan membershipPlan);
     
     public Task<Membershipplan?> GetMembershipPlanByIdAsync(int planId);
+    
+    public Task DeleteMembershipPlanAsync(int planId);
 }

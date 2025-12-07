@@ -4,7 +4,7 @@ using GymManagement.Infrastructure.Repositories;
 
 namespace GymManagement.Application.Services;
 
-public class InvoiceService (MembershipPlanRepository membershipPlanRepository, ClientRepository clientRepository, InvoiceRepository invoiceRepository, MembershipRepository membershipRepository)
+public class InvoiceService (MembershipPlanRepository membershipPlanRepository, ClientRepository clientRepository, InvoiceRepository invoiceRepository, MembershipRepository membershipRepository, UnitOfWork unitOfWork)
 {
     public async Task<Invoice> CreateInvoiceAsync(int clientId, PaymentMethod method, int membershipPlanId, string? notes)
     {
@@ -35,7 +35,9 @@ public class InvoiceService (MembershipPlanRepository membershipPlanRepository, 
         {
             await invoiceRepository.MarkAsPayedAsync(invoiceId);
             await membershipRepository.MarkAsActiveMembershipAsync(membership.Id);
+            await unitOfWork.SaveChangesAsync();
         }
     } 
+    
     
 }

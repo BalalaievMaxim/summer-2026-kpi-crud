@@ -25,6 +25,14 @@ public class MembershipRepository(GymManagementContext context) : IMembershipRep
             .Where(m =>  m.MembershipId == membershipId)
             .ExecuteUpdateAsync(m => m.
                 SetProperty(e => e.IsActive, true));
+        
+        await AddAsync(await context.Memberships.Where(i => i.MembershipId == membershipId).FirstAsync());
     }
-    
+
+    public async Task<List<Membership>> GetAllActiveMembershipReferencedOnMembershipPlan(int planId)
+    {
+        return await context.Memberships
+            .Where(m => m.PlanId == planId && m.IsActive == true)
+            .ToListAsync();
+    }
 }

@@ -15,21 +15,6 @@ public class MembershipService (
     UnitOfWork unitOfWork
     )
 {
-    public async Task CreatePlanAsync(CreateMembershipPlanDto dto)
-    {
-        
-        var plan = new Membershipplan()
-        {
-            Name = dto.Name,
-            DurationMonths = dto.DurationMonth,
-            Price = dto.Price
-        };
-
-        if (plan.DurationMonths > 0 && plan.Name != String.Empty && plan.Price > 0)
-        {
-            await membershipPlanRepository.AddAsync(plan);
-        }
-    }
 
     public async Task PurchaseMembershipAsync(int clientId, int planId, PaymentMethod method, string? notes)
     {

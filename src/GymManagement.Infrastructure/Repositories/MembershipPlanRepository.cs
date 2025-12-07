@@ -18,4 +18,12 @@ public class MembershipPlanRepository(GymManagementContext context) : IMembershi
             .Where(m => m.PlanId == planId)
             .FirstAsync();
     }
+
+    public async Task DeleteMembershipPlanAsync(int planId)
+    {
+        await context.Membershipplans
+            .Where(m => m.PlanId == planId)
+            .ExecuteDeleteAsync();
+        await AddAsync(await context.Membershipplans.Where(m => m.PlanId == planId).FirstAsync());
+    }
 }

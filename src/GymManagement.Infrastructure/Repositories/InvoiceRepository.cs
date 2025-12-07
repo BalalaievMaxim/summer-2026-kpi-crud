@@ -28,5 +28,7 @@ public class InvoiceRepository (GymManagementContext context) : IInvoiceReposito
             .Where(invoice => invoice.InvoiceId == invoiceId)
             .ExecuteUpdateAsync(i => i
                 .SetProperty(e => e.Status, nameof(PaymentStatus.Paid).ToLower()));
+        
+        await AddAsync(await context.Invoices.Where(i => i.InvoiceId == invoiceId).FirstAsync());
     }
 }
