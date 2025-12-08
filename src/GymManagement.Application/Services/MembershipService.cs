@@ -1,6 +1,4 @@
-﻿using System.Net.Http.Headers;
-using GymManagement.Application.DTOs;
-using GymManagement.Core.Entities;
+﻿using GymManagement.Core.Entities;
 using GymManagement.Core.Enums;
 using GymManagement.Infrastructure.Repositories;
 

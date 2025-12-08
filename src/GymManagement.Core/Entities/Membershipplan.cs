@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace GymManagement.Core.Entities;
 
+
 public partial class Membershipplan
 {
     public int PlanId { get; set; }

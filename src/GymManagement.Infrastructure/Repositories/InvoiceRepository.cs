@@ -28,7 +28,25 @@ public class InvoiceRepository (GymManagementContext context) : IInvoiceReposito
             .Where(invoice => invoice.InvoiceId == invoiceId)
             .ExecuteUpdateAsync(i => i
                 .SetProperty(e => e.Status, nameof(PaymentStatus.Paid).ToLower()));
+    }
+
+    public async Task<List<TotalMembershipRevenueDto>> GetMonthlyRevenueByPlanAsync()
+    {
+        var sql = @"
+        SELECT
+            TO_CHAR(i.date, 'YYYY-MM') AS RevenueMonth,
+            mp.name AS PlanName,
+            SUM(i.amount) AS TotalRevenue
+        FROM Invoice i
+        JOIN Membership m ON i.client_id = m.client_id
+            AND i.date BETWEEN m.start_date AND m.end_date
+        JOIN MembershipPlan mp ON m.plan_id = mp.plan_id
+        WHERE i.status = 'paid'
+        GROUP BY TO_CHAR(i.date, 'YYYY-MM'), mp.name
+        ORDER BY RevenueMonth DESC, TotalRevenue DESC";
         
-        await AddAsync(await context.Invoices.Where(i => i.InvoiceId == invoiceId).FirstAsync());
+        return await context.Database
+            .SqlQuery<TotalMembershipRevenueDto>(System.Runtime.CompilerServices.FormattableStringFactory.Create(sql))
+            .ToListAsync();
     }
 }

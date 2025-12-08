@@ -27,10 +27,14 @@ public class MembershipPlanService(MembershipPlanRepository membershipPlanReposi
         var plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(planId);
 
         List <Membership> activeMemberships = await membershipRepository.GetActiveMembershipsByClientAsync(planId);
-        if (activeMemberships.Count < 5)
+        if (activeMemberships.Count == 0)
         {
             await membershipPlanRepository.DeleteMembershipPlanAsync(planId);
             await unitOfWork.SaveChangesAsync();
+        }
+        else
+        {
+            throw new Exception("The plan has active memberships");
         }
         
     }

@@ -18,7 +18,7 @@ public class InvoiceService (MembershipPlanRepository membershipPlanRepository, 
             invoice.Amount = plan.Price;
             invoice.ClientId = clientId;
             invoice.Date = DateOnly.FromDateTime(DateTime.Now);
-            invoice.PaymentMethod = nameof(method).ToLower();
+            invoice.PaymentMethod = method.ToString().ToLower();
             invoice.Status = nameof(PaymentStatus.Pending).ToLower();
         }
 
@@ -27,7 +27,7 @@ public class InvoiceService (MembershipPlanRepository membershipPlanRepository, 
         return invoice;
     }
 
-    public async Task UpdatePayedInvoiceAsync(int clientId, int invoiceId)
+    public async Task UpdatePaidInvoiceAsync(int clientId, int invoiceId)
     {
         var invoice = await invoiceRepository.GetInvoiceAsync(clientId, invoiceId);
         var membership = membershipRepository.GetActiveMembershipsByClientAsync(clientId);
@@ -37,7 +37,15 @@ public class InvoiceService (MembershipPlanRepository membershipPlanRepository, 
             await membershipRepository.MarkAsActiveMembershipAsync(membership.Id);
             await unitOfWork.SaveChangesAsync();
         }
-    } 
-    
-    
+    }
+
+    public async Task<List<Invoice>> GetAllPendingInvoicesAsync(int clientId)
+    {
+        var pendingInvoices = new List<Invoice>();
+        foreach (var invoice in await invoiceRepository.GetAllClientInvoicesAsync(clientId))
+        {
+            if (invoice.Status == nameof(PaymentStatus.Pending).ToLower()) pendingInvoices.Add(invoice);
+        }
+        return pendingInvoices;
+    }
 }
