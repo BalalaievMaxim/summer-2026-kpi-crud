@@ -5,7 +5,13 @@ using GymManagement.Infrastructure.Repositories;
 
 namespace GymManagement.Application.Services;
 
-public class InvoiceService (IMembershipPlanRepository membershipPlanRepository, IClientRepository clientRepository, IInvoiceRepository invoiceRepository, IMembershipRepository membershipRepository, IUnitOfWork unitOfWork)
+public class InvoiceService (
+    IMembershipPlanRepository membershipPlanRepository,
+    IClientRepository clientRepository,
+    IInvoiceRepository invoiceRepository,
+    IMembershipRepository membershipRepository,
+    IUnitOfWork unitOfWork
+    ) : IInvoiceService
 {
     public async Task<Invoice> CreateInvoiceAsync(int clientId, PaymentMethod method, int membershipPlanId, string? notes)
     {
