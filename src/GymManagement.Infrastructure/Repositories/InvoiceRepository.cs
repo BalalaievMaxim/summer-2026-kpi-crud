@@ -2,6 +2,7 @@
 using GymManagement.Core.Enums;
 using GymManagement.Core.Interfaces;
 using GymManagement.Infrastructure.Data;
+using GymManagement.Infrastructure.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Repositories;

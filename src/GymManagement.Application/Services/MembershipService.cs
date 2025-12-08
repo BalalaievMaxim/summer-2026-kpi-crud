@@ -22,7 +22,7 @@ public class MembershipService (
         
         
         var client = await clientRepository.GetClientByIdAsync(clientId);
-        if ( client != null && membershipPlanRepository.GetMembershipPlanByIdAsync(planId).Result != null && await HasClientCertainActiveMembership(clientId,planId))
+        if ( plan!= null && client != null && membershipPlanRepository.GetMembershipPlanByIdAsync(planId).Result != null && await HasClientCertainActiveMembership(clientId,planId))
         {
             membership.PlanId = planId;
             membership.ClientId = clientId;
