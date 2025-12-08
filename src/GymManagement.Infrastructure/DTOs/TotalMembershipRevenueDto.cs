@@ -1,8 +1,8 @@
-﻿namespace GymManagement.Infrastructure;
+﻿namespace GymManagement.Infrastructure.DTOs;
 
 public class TotalMembershipRevenueDto
 {
-    public string RevenueMonth { get; set; }
-    public string PlanName { get; set; }
-    public decimal TotalRevenue { get; set; }
+    public required string RevenueMonth { get; set; }
+    public required string PlanName { get; set; }
+    public required decimal TotalRevenue { get; set; }
 }

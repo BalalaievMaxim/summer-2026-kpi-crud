@@ -1,10 +1,17 @@
 ﻿using GymManagement.Core.Entities;
 using GymManagement.Core.Enums;
+using GymManagement.Core.Interfaces;
 using GymManagement.Infrastructure.Repositories;
 
 namespace GymManagement.Application.Services;
 
-public class InvoiceService (MembershipPlanRepository membershipPlanRepository, ClientRepository clientRepository, InvoiceRepository invoiceRepository, MembershipRepository membershipRepository, UnitOfWork unitOfWork)
+public class InvoiceService (
+    IMembershipPlanRepository membershipPlanRepository,
+    IClientRepository clientRepository,
+    IInvoiceRepository invoiceRepository,
+    IMembershipRepository membershipRepository,
+    IUnitOfWork unitOfWork
+    ) : IInvoiceService
 {
     public async Task<Invoice> CreateInvoiceAsync(int clientId, PaymentMethod method, int membershipPlanId, string? notes)
     {

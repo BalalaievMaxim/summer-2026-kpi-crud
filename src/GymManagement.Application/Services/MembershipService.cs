@@ -1,16 +1,18 @@
-﻿using GymManagement.Core.Entities;
+﻿using System.Runtime.InteropServices.JavaScript;
+using GymManagement.Core.Entities;
 using GymManagement.Core.Enums;
+using GymManagement.Core.Interfaces;
 using GymManagement.Infrastructure.Repositories;
 
 namespace GymManagement.Application.Services;
 
 public class MembershipService (
-    MembershipRepository membershipRepository,
-    ClientRepository clientRepository,
-    InvoiceService invoiceService,
-    MembershipPlanRepository membershipPlanRepository,
-    InvoiceRepository invoiceRepository,
-    UnitOfWork unitOfWork
+    IMembershipRepository membershipRepository,
+    IClientRepository clientRepository,
+    IInvoiceService invoiceService,
+    IMembershipPlanRepository membershipPlanRepository,
+    IInvoiceRepository invoiceRepository,
+    IUnitOfWork unitOfWork
     )
 {
 
@@ -22,7 +24,7 @@ public class MembershipService (
         
         
         var client = await clientRepository.GetClientByIdAsync(clientId);
-        if ( client != null && membershipPlanRepository.GetMembershipPlanByIdAsync(planId).Result != null && await HasClientCertainActiveMembership(clientId,planId))
+        if ( plan!= null && client != null && await membershipPlanRepository.GetMembershipPlanByIdAsync(planId) != null && !await HasClientCertainActiveMembership(clientId,planId))
         {
             membership.PlanId = planId;
             membership.ClientId = clientId;
@@ -31,14 +33,15 @@ public class MembershipService (
             membership.IsActive = false;
             membership.Plan = plan;
             membership.Client = client;
+            Invoice invoice = await invoiceService.CreateInvoiceAsync(clientId, method, planId, notes);
+            await invoiceRepository.AddAsync(invoice);
+            await membershipRepository.AddAsync(membership);
+            await unitOfWork.SaveChangesAsync();
         }
-
-        Invoice invoice = await invoiceService.CreateInvoiceAsync(clientId, method, planId, notes);
-
-        await invoiceRepository.AddAsync(invoice);
-        await membershipRepository.AddAsync(membership);
-        await unitOfWork.SaveChangesAsync();
-
+        else
+        {
+            throw new Exception("Cannot purchase membership: Invalid data or already active.");
+        }
     }
 
     private async Task<bool> HasClientCertainActiveMembership(int clientId, int planId)

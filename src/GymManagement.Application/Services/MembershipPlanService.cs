@@ -1,10 +1,11 @@
 ﻿using GymManagement.Application.DTOs;
 using GymManagement.Core.Entities;
+using GymManagement.Core.Interfaces;
 using GymManagement.Infrastructure.Repositories;
 
 namespace GymManagement.Application.Services;
 
-public class MembershipPlanService(MembershipPlanRepository membershipPlanRepository, MembershipRepository membershipRepository, UnitOfWork unitOfWork)
+public class MembershipPlanService(IMembershipPlanRepository membershipPlanRepository, IMembershipRepository membershipRepository, IUnitOfWork unitOfWork)
 {
     public async Task CreatePlanAsync(CreateMembershipPlanDto dto)
     {
@@ -26,7 +27,7 @@ public class MembershipPlanService(MembershipPlanRepository membershipPlanReposi
     {
         var plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(planId);
 
-        List <Membership> activeMemberships = await membershipRepository.GetActiveMembershipsByClientAsync(planId);
+        List <Membership> activeMemberships = await membershipRepository.GetAllActiveMembershipReferencedOnMembershipPlan(planId);
         if (activeMemberships.Count == 0)
         {
             await membershipPlanRepository.DeleteMembershipPlanAsync(planId);
