@@ -1,19 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace GymManagement.Core.Entities;
 
-public partial class Enrollment
+[Table("Enrollment")]
+public class Enrollment
 {
+    [Key]
+    [Column("enrollment_id")]
     public int EnrollmentId { get; set; }
 
+    [Column("client_id")]
     public int ClientId { get; set; }
 
+    [ForeignKey("ClientId")]
+    public Client Client { get; set; } = null!;
+
+    [Column("class_id")]
     public int ClassId { get; set; }
 
-    public DateTime? RegistrationTime { get; set; }
+    [ForeignKey("ClassId")]
+    public Class Class { get; set; } = null!;
 
-    public virtual Class Class { get; set; } = null!;
-
-    public virtual Client Client { get; set; } = null!;
+    [Column("registration_time")]
+    public DateTime RegistrationTime { get; set; } = DateTime.UtcNow;
 }

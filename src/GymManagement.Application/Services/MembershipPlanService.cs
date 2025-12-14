@@ -10,7 +10,7 @@ public class MembershipPlanService(IMembershipPlanRepository membershipPlanRepos
     public async Task CreatePlanAsync(CreateMembershipPlanDto dto)
     {
         
-        var plan = new Membershipplan()
+        var plan = new MembershipPlan()
         {
             Name = dto.Name,
             DurationMonths = dto.DurationMonth,
