@@ -1,4 +1,4 @@
-﻿namespace GymManagement.Infrastructure.DTOs;
+﻿namespace GymManagement.Core.DTOs;
 
 public class TotalMembershipRevenueDto
 {

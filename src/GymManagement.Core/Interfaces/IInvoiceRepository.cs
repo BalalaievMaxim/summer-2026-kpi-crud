@@ -1,4 +1,5 @@
-﻿using GymManagement.Core.Entities;
+﻿using GymManagement.Core.DTOs;
+using GymManagement.Core.Entities;
 
 namespace GymManagement.Core.Interfaces;
 
@@ -8,4 +9,5 @@ public interface IInvoiceRepository
     Task<List<Invoice>> GetPendingInvoicesAsync(int clientId); 
     Task<Invoice?> GetInvoiceAsync(int invoiceId);
     Task AddAsync(Invoice invoice);
+    Task<List<TotalMembershipRevenueDto>> GetMonthlyRevenueByPlanAsync();
 }

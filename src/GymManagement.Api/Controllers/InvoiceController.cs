@@ -1,4 +1,6 @@
 ﻿using GymManagement.Application.DTOs;
+using GymManagement.Application.Services;
+using GymManagement.Core.DTOs;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Exceptions;
 using GymManagement.Core.Interfaces;
@@ -68,6 +70,20 @@ public class InvoiceController(IInvoiceService service) : ControllerBase
         
         return Ok(response);
     }
+    
+    [HttpGet("analytics/revenue-by-plan")]
+    public async Task<ActionResult<List<TotalMembershipRevenueDto>>> GetRevenueAnalytics()
+    {
+        try
+        {
+            var analytics = await service.GetMonthlyRevenueAnalyticsAsync();
+            return Ok(analytics);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 
     private static InvoiceResponseDto MapToResponseDto(Invoice invoice)
     {
@@ -82,4 +98,5 @@ public class InvoiceController(IInvoiceService service) : ControllerBase
             Notes = invoice.Notes
         };
     }
+    
 }

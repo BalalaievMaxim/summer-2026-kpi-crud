@@ -2,7 +2,7 @@
 using GymManagement.Core.Enums;
 using GymManagement.Core.Interfaces;
 using GymManagement.Infrastructure.Data;
-using GymManagement.Infrastructure.DTOs;
+using GymManagement.Core.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Repositories;
@@ -42,16 +42,16 @@ public class InvoiceRepository(GymManagementContext context) : IInvoiceRepositor
     {
         var sql = @"
         SELECT
-            TO_CHAR(i.date, 'YYYY-MM') AS RevenueMonth,
-            mp.name AS PlanName,
-            SUM(i.amount) AS TotalRevenue
-        FROM Invoice i
-        JOIN Membership m ON i.client_id = m.client_id
+            TO_CHAR(i.date, 'YYYY-MM') AS ""RevenueMonth"",
+            mp.name AS ""PlanName"",
+            SUM(i.amount) AS ""TotalRevenue""
+        FROM invoice i
+        JOIN membership m ON i.client_id = m.client_id
             AND i.date BETWEEN m.start_date AND m.end_date
-        JOIN MembershipPlan mp ON m.plan_id = mp.plan_id
+        JOIN membershipplan mp ON m.plan_id = mp.plan_id
         WHERE i.status = 'paid'
         GROUP BY TO_CHAR(i.date, 'YYYY-MM'), mp.name
-        ORDER BY RevenueMonth DESC, TotalRevenue DESC";
+        ORDER BY ""RevenueMonth"" DESC, ""TotalRevenue"" DESC";
         
         return await context.Database
             .SqlQuery<TotalMembershipRevenueDto>(System.Runtime.CompilerServices.FormattableStringFactory.Create(sql))

@@ -2,6 +2,7 @@
 using GymManagement.Core.Enums;
 using GymManagement.Core.Exceptions;
 using GymManagement.Core.Interfaces;
+using GymManagement.Core.DTOs;
 
 namespace GymManagement.Application.Services;
 
@@ -69,5 +70,10 @@ public class InvoiceService(
     {
 
         return await invoiceRepository.GetPendingInvoicesAsync(clientId);
+    }
+    
+    public async Task<List<TotalMembershipRevenueDto>> GetMonthlyRevenueAnalyticsAsync()
+    {
+        return await invoiceRepository.GetMonthlyRevenueByPlanAsync();
     }
 }
