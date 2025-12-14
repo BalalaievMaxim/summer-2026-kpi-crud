@@ -15,8 +15,7 @@ public class MembershipPlanRepository(GymManagementContext context) : IMembershi
     public async Task<MembershipPlan?> GetMembershipPlanByIdAsync(int planId)
     {
         return await context.Membershipplans
-            .Where(m => m.PlanId == planId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(m => m.PlanId == planId);
     }
 
     public async Task DeleteMembershipPlanAsync(int planId)
@@ -24,18 +23,18 @@ public class MembershipPlanRepository(GymManagementContext context) : IMembershi
         await context.Membershipplans
             .Where(m => m.PlanId == planId)
             .ExecuteDeleteAsync();
-        await AddAsync(await context.Membershipplans.Where(m => m.PlanId == planId).FirstAsync());
     }
     
     public async Task<List<MembershipPlan>> GetPlansAsync(decimal? min, decimal? max)
     {
-        var query = await context.Membershipplans.AsNoTracking().ToListAsync();
+        var query = context.Membershipplans.AsNoTracking().AsQueryable();
 
-        if (min.HasValue) query = query.Where(p => p.Price >= min.Value).ToList();;
-        if (max.HasValue) query = query.Where(p => p.Price <= max.Value).ToList();
+        if (min.HasValue) 
+            query = query.Where(p => p.Price >= min.Value);
+        
+        if (max.HasValue) 
+            query = query.Where(p => p.Price <= max.Value);
 
-        query = query.OrderBy(p => p.Price).ToList();
-
-        return query.ToList();
+        return await query.OrderBy(p => p.Price).ToListAsync();
     }
 }

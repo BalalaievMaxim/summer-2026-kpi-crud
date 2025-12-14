@@ -4,11 +4,8 @@ namespace GymManagement.Core.Interfaces;
 
 public interface IMembershipPlanRepository
 {
-    public Task AddAsync (MembershipPlan membershipPlan);
-    
-    public Task<MembershipPlan?> GetMembershipPlanByIdAsync(int planId);
-    
-    public Task DeleteMembershipPlanAsync(int planId);
-
-    public Task<List<MembershipPlan>> GetPlansAsync(decimal? min, decimal? max);
+    Task AddAsync(MembershipPlan membershipPlan);
+    Task<MembershipPlan?> GetMembershipPlanByIdAsync(int planId);
+    Task DeleteMembershipPlanAsync(int planId);
+    Task<List<MembershipPlan>> GetPlansAsync(decimal? min, decimal? max);
 }
