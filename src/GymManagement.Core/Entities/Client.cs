@@ -1,25 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GymManagement.Core.Entities;
 
-public partial class Client
+[Table("Client")]
+public class Client
 {
+    [Key]
+    [Column("client_id")]
     public int ClientId { get; set; }
 
-    public string Name { get; set; } = null!;
+    [Column("name")]
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
 
-    public string Email { get; set; } = null!;
+    [Column("email")]
+    [Required]
+    [MaxLength(100)]
+    public string Email { get; set; } = string.Empty;
 
-    public string Password { get; set; } = null!;
+    [Column("password")]
+    [Required]
+    [MaxLength(255)]
+    public string Password { get; set; } = string.Empty;
 
-    public string Phone { get; set; } = null!;
+    [Column("phone")]
+    [Required]
+    [MaxLength(20)]
+    public string Phone { get; set; } = string.Empty;
 
-    public DateTime? CreatedAt { get; set; }
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
-
-    public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
-
-    public virtual ICollection<Membership> Memberships { get; set; } = new List<Membership>();
+    // Навігаційні властивості
+    public ICollection<Membership> Memberships { get; set; } = new List<Membership>();
+    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }

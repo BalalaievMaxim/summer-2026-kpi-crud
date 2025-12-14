@@ -1,7 +1,21 @@
 services:
+  api:
+    image: gym-management-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=gym_db;Database=gym_management;Username=postgres;Password=root
+    depends_on:
+      - db
+
   db:
     image: postgres:15-alpine
     container_name: gym_db
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
@@ -10,7 +24,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations/002-normalized_db.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   postgres_data:

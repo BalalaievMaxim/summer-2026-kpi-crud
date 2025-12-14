@@ -42,7 +42,7 @@ public class MembershipServicesTests
         int planId = 5;
 
         _mockPlanRepo.Setup(r => r.GetMembershipPlanByIdAsync(planId))
-            .ReturnsAsync(new Membershipplan { PlanId = planId, DurationMonths = 1, Price = 100 });
+            .ReturnsAsync(new MembershipPlan { PlanId = planId, DurationMonths = 1, Price = 100 });
 
         _mockClientRepo.Setup(r => r.GetClientByIdAsync(clientId))
             .ReturnsAsync(new Client { ClientId = clientId });
@@ -81,7 +81,7 @@ public class MembershipServicesTests
         int clientId = 1;
         int planId = 5;
 
-        _mockPlanRepo.Setup(r => r.GetMembershipPlanByIdAsync(planId)).ReturnsAsync(new Membershipplan { PlanId = planId });
+        _mockPlanRepo.Setup(r => r.GetMembershipPlanByIdAsync(planId)).ReturnsAsync(new MembershipPlan { PlanId = planId });
         _mockClientRepo.Setup(r => r.GetClientByIdAsync(clientId)).ReturnsAsync(new Client { ClientId = clientId });
 
         _mockMembershipRepo.Setup(r => r.GetActiveMembershipsByClientAsync(clientId))
@@ -110,7 +110,7 @@ public class MembershipServicesTests
         );
 
         _mockClientRepo.Setup(r => r.GetClientByIdAsync(It.IsAny<int>())).ReturnsAsync(new Client());
-        _mockPlanRepo.Setup(r => r.GetMembershipPlanByIdAsync(It.IsAny<int>())).ReturnsAsync((Membershipplan?)null);
+        _mockPlanRepo.Setup(r => r.GetMembershipPlanByIdAsync(It.IsAny<int>())).ReturnsAsync((MembershipPlan?)null);
 
         await Assert.ThrowsAsync<Exception>(() => 
             service.PurchaseMembershipAsync(1, 999, PaymentMethod.Card, null));

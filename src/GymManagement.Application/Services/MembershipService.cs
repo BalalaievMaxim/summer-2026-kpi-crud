@@ -18,7 +18,7 @@ public class MembershipService (
 
     public async Task PurchaseMembershipAsync(int clientId, int planId, PaymentMethod method, string? notes)
     {
-        Membershipplan? plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(planId);
+        MembershipPlan? plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(planId);
         Membership membership = new Membership();
         
         
@@ -31,7 +31,7 @@ public class MembershipService (
             membership.StartDate  = DateOnly.FromDateTime(DateTime.Now);
             membership.EndDate = membership.StartDate.AddMonths(plan.DurationMonths);
             membership.IsActive = false;
-            membership.Plan = plan;
+            membership.PlanId = plan.PlanId;
             membership.Client = client;
             Invoice invoice = await invoiceService.CreateInvoiceAsync(clientId, method, planId, notes);
             await invoiceRepository.AddAsync(invoice);

@@ -38,7 +38,7 @@ public class MembershipPlanServiceTest
         
         await service.CreatePlanAsync(dto);
 
-        _mockPlanRepo.Verify(x => x.AddAsync(It.Is<Membershipplan>(p => 
+        _mockPlanRepo.Verify(x => x.AddAsync(It.Is<MembershipPlan>(p => 
             p.Name == dto.Name && 
             p.Price == dto.Price &&
             p.DurationMonths == dto.DurationMonth)), Times.Once);
@@ -60,7 +60,7 @@ public class MembershipPlanServiceTest
         };
 
         await service.CreatePlanAsync(invalidDto);
-        _mockPlanRepo.Verify(x => x.AddAsync(It.IsAny<Membershipplan>()), Times.Never);
+        _mockPlanRepo.Verify(x => x.AddAsync(It.IsAny<MembershipPlan>()), Times.Never);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class MembershipPlanServiceTest
         int planId = 100;
         
         _mockPlanRepo.Setup(r => r.GetMembershipPlanByIdAsync(planId))
-            .ReturnsAsync(new Membershipplan { PlanId = planId });
+            .ReturnsAsync(new MembershipPlan { PlanId = planId });
         
         _mockMembershipRepo.Setup(r => r.GetAllActiveMembershipReferencedOnMembershipPlan(planId))
             .ReturnsAsync(new List<Membership>());
@@ -96,7 +96,7 @@ public class MembershipPlanServiceTest
         int planId = 100;
 
         _mockPlanRepo.Setup(r => r.GetMembershipPlanByIdAsync(planId))
-            .ReturnsAsync(new Membershipplan { PlanId = planId });
+            .ReturnsAsync(new MembershipPlan { PlanId = planId });
 
         _mockMembershipRepo.Setup(r => r.GetAllActiveMembershipReferencedOnMembershipPlan(planId))
             .ReturnsAsync(new List<Membership> { new Membership() });
