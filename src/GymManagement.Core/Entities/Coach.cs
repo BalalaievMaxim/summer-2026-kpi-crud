@@ -1,21 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace GymManagement.Core.Entities;
 
-public partial class Coach
+[Table("Coach")]
+public class Coach
 {
+    [Key]
+    [Column("coach_id")]
     public int CoachId { get; set; }
 
-    public string Name { get; set; } = null!;
+    [Column("name")]
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
 
-    public string Specialization { get; set; } = null!;
+    [Column("specialization")]
+    [Required]
+    [MaxLength(100)]
+    public string Specialization { get; set; } = string.Empty;
 
-    public string Email { get; set; } = null!;
+    [Column("email")]
+    [Required]
+    [MaxLength(100)]
+    public string Email { get; set; } = string.Empty;
 
-    public string Password { get; set; } = null!;
+    [Column("password")]
+    [Required]
+    [MaxLength(255)]
+    public string Password { get; set; } = string.Empty;
 
-    public DateTime? CreatedAt { get; set; }
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
+    public ICollection<Class> Classes { get; set; } = new List<Class>();
 }

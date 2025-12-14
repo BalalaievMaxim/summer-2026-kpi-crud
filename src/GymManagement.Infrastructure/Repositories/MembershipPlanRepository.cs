@@ -7,16 +7,16 @@ namespace GymManagement.Infrastructure.Repositories;
 
 public class MembershipPlanRepository(GymManagementContext context) : IMembershipPlanRepository
 {
-    public async Task AddAsync(Membershipplan membershipPlan)
+    public async Task AddAsync(MembershipPlan membershipPlan)
     {
         await context.Membershipplans.AddAsync(membershipPlan);
     }
     
-    public async Task<Membershipplan?> GetMembershipPlanByIdAsync(int planId)
+    public async Task<MembershipPlan?> GetMembershipPlanByIdAsync(int planId)
     {
         return await context.Membershipplans
             .Where(m => m.PlanId == planId)
-            .FirstAsync();
+            .FirstOrDefaultAsync();
     }
 
     public async Task DeleteMembershipPlanAsync(int planId)
@@ -27,7 +27,7 @@ public class MembershipPlanRepository(GymManagementContext context) : IMembershi
         await AddAsync(await context.Membershipplans.Where(m => m.PlanId == planId).FirstAsync());
     }
     
-    public async Task<List<Membershipplan>> GetPlansAsync(decimal? min, decimal? max)
+    public async Task<List<MembershipPlan>> GetPlansAsync(decimal? min, decimal? max)
     {
         var query = await context.Membershipplans.AsNoTracking().ToListAsync();
 

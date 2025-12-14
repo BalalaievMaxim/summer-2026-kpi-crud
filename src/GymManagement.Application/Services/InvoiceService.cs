@@ -1,7 +1,6 @@
 ﻿using GymManagement.Core.Entities;
 using GymManagement.Core.Enums;
 using GymManagement.Core.Interfaces;
-using GymManagement.Infrastructure.Repositories;
 
 namespace GymManagement.Application.Services;
 
@@ -15,21 +14,33 @@ public class InvoiceService (
 {
     public async Task<Invoice> CreateInvoiceAsync(int clientId, PaymentMethod method, int membershipPlanId, string? notes)
     {
-        Invoice invoice = new Invoice();
-        Membershipplan? plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(membershipPlanId);
+        MembershipPlan? plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(membershipPlanId);
         
-        var client = await clientRepository.GetClientByIdAsync(clientId);
-        if ( client != null && plan != null)
+        if (plan == null)
         {
-            invoice.Client = client;
-            invoice.Amount = plan.Price;
-            invoice.ClientId = clientId;
-            invoice.Date = DateOnly.FromDateTime(DateTime.Now);
-            invoice.PaymentMethod = method.ToString().ToLower();
-            invoice.Status = nameof(PaymentStatus.Pending).ToLower();
+            throw new Exception($"Membership Plan with ID {membershipPlanId} not found in the database.");
         }
-
-        if (notes != null) invoice.Notes = notes;
+        
+        Client? client = await clientRepository.GetClientByIdAsync(clientId);
+        
+        if (client == null)
+        {
+            throw new Exception($"Client with ID {clientId} not found in the database.");
+        }
+        
+        var invoice = new Invoice
+        {
+            ClientId = clientId,
+            Client = client,
+            Amount = plan.Price,
+            Date = DateOnly.FromDateTime(DateTime.Now),
+            PaymentMethod = method.ToString().ToLower(),
+            Status = nameof(PaymentStatus.Pending).ToLower(), 
+            Notes = notes
+        };
+        
+        await invoiceRepository.AddAsync(invoice);
+        await unitOfWork.SaveChangesAsync();
         
         return invoice;
     }
@@ -37,11 +48,19 @@ public class InvoiceService (
     public async Task UpdatePaidInvoiceAsync(int clientId, int invoiceId)
     {
         var invoice = await invoiceRepository.GetInvoiceAsync(clientId, invoiceId);
-        var membership = membershipRepository.GetActiveMembershipsByClientAsync(clientId);
+        
+        var memberships = await membershipRepository.GetActiveMembershipsByClientAsync(clientId); 
+        
+        var activeMembership = memberships.FirstOrDefault();
+
         if (invoice != null && invoice.Status == nameof(PaymentStatus.Pending).ToLower())
         {
             await invoiceRepository.MarkAsPayedAsync(invoiceId);
-            await membershipRepository.MarkAsActiveMembershipAsync(membership.Id);
+            
+            if (activeMembership != null)
+            {
+                await membershipRepository.MarkAsActiveMembershipAsync(activeMembership.MembershipId);
+            }
             await unitOfWork.SaveChangesAsync();
         }
     }

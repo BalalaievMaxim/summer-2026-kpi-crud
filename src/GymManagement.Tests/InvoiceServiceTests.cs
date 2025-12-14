@@ -43,7 +43,7 @@ public class InvoiceServiceTests
         decimal expectedPrice = 100.00m;
 
         _mockPlanRepo.Setup(repo => repo.GetMembershipPlanByIdAsync(planId))
-            .ReturnsAsync(new Membershipplan { PlanId = planId, Price = expectedPrice });
+            .ReturnsAsync(new MembershipPlan { PlanId = planId, Price = expectedPrice });
 
         _mockClientRepo.Setup(repo => repo.GetClientByIdAsync(clientId))
             .ReturnsAsync(new Client { ClientId = clientId, Name = "Test User" });
@@ -64,7 +64,7 @@ public class InvoiceServiceTests
             .ReturnsAsync((Client?)null);
             
         _mockPlanRepo.Setup(repo => repo.GetMembershipPlanByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync(new Membershipplan());
+            .ReturnsAsync(new MembershipPlan());
 
         var result = await _service.CreateInvoiceAsync(1, PaymentMethod.Cash, 1, null);
 
