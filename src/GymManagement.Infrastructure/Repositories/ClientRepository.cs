@@ -28,9 +28,18 @@ public class ClientRepository (GymManagementContext context): IClientRepository
         await context.Clients.AddAsync(client);
     }
 
-    public Task<Client?> GetByIdWithEnrollmentsAsync(int clientId)
+    public async Task<Client?> GetByIdWithMembershipsAsync(int clientId)
     {
-        throw new NotImplementedException();
+        return await context.Clients
+            .Include(c => c.Memberships)
+            .FirstOrDefaultAsync(c => c.ClientId == clientId);
+    }
+
+    public async Task<Client?> GetByIdWithEnrollmentsAsync(int clientId)
+    {
+        return await context.Clients
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.ClientId == clientId);
     }
 
     public Task<List<Client>> SearchByNameOrEmailAsync(string searchTerm)
