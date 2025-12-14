@@ -6,4 +6,5 @@ namespace GymManagement.Core.Interfaces;
 public interface IClassRepository
 {
     Task<Class?> GetByIdAsync(int classId);
+    Task<Class?> GetByIdWithEnrollmentsAsync(int classId);
 }
