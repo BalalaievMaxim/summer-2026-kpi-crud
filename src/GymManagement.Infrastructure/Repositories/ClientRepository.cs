@@ -69,7 +69,8 @@ public class ClientRepository (GymManagementContext context): IClientRepository
 
     public Task RemoveAsync(Client client)
     {
-        throw new NotImplementedException();
+        context.Clients.Remove(client);
+        return Task.CompletedTask;
     }
 
     public Task<List<Client>> ListAsync()

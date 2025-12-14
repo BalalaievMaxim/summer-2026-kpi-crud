@@ -39,4 +39,16 @@ public class ClientService
         await _clientRepository.UpdateAsync(client);
         await _unitOfWork.SaveChangesAsync();
     }
+
+    public async Task DeleteClientAsync(int clientId)
+    {
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        if (client == null)
+        {
+            throw new InvalidOperationException("Client not found.");
+        }
+
+        await _clientRepository.RemoveAsync(client);
+        await _unitOfWork.SaveChangesAsync();
+    }
 }
