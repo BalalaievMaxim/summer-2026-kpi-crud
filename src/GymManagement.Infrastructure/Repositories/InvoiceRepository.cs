@@ -7,28 +7,35 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Repositories;
 
-public class InvoiceRepository (GymManagementContext context) : IInvoiceRepository
+public class InvoiceRepository(GymManagementContext context) : IInvoiceRepository
 {
     public async Task<List<Invoice>> GetAllClientInvoicesAsync(int clientId)
     {
-        return await context.Invoices.Where(i => i.ClientId == clientId).ToListAsync();
+        return await context.Invoices
+            .Where(i => i.ClientId == clientId)
+            .AsNoTracking()
+            .ToListAsync();
     }
 
-    public async Task<Invoice?> GetInvoiceAsync(int clientId, int invoiceId)
+    public async Task<List<Invoice>> GetPendingInvoicesAsync(int clientId)
     {
-        return await context.Invoices.Where(i => i.ClientId == clientId && i.InvoiceId == invoiceId).FirstOrDefaultAsync();
+        var pendingStatus = nameof(PaymentStatus.Pending).ToLower();
+        return await context.Invoices
+            .Where(i => i.ClientId == clientId && i.Status == pendingStatus)
+            .AsNoTracking()
+            .ToListAsync();
     }
+
+    public async Task<Invoice?> GetInvoiceAsync(int invoiceId)
+    {
+        return await context.Invoices
+            .Include(i => i.Client)
+            .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId);
+    }
+
     public async Task AddAsync(Invoice invoice)
     {
         await context.Invoices.AddAsync(invoice);
-    }
-
-    public async Task MarkAsPayedAsync(int invoiceId)
-    {
-        await context.Invoices
-            .Where(invoice => invoice.InvoiceId == invoiceId)
-            .ExecuteUpdateAsync(i => i
-                .SetProperty(e => e.Status, nameof(PaymentStatus.Paid).ToLower()));
     }
 
     public async Task<List<TotalMembershipRevenueDto>> GetMonthlyRevenueByPlanAsync()
