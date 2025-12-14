@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace GymManagement.Infrastructure.Repositories;
 
-public class ClientRepository (GymManagementContext context): IClientRepository
+public class ClientRepository(GymManagementContext context) : IClientRepository
 {
     public Task<Client?> GetClientByIdAsync(int clientId)
     {
@@ -22,7 +22,7 @@ public class ClientRepository (GymManagementContext context): IClientRepository
             .Where(c => c.ClientId == clientId)
             .FirstOrDefaultAsync();
     }
-    
+
     public async Task AddAsync(Client client)
     {
         await context.Clients.AddAsync(client);
@@ -44,9 +44,11 @@ public class ClientRepository (GymManagementContext context): IClientRepository
             .FirstOrDefaultAsync(c => c.ClientId == clientId);
     }
 
-    public Task<List<Client>> SearchByNameOrEmailAsync(string searchTerm)
+    public async Task<List<Client>> SearchByNameOrEmailAsync(string searchTerm)
     {
-        throw new NotImplementedException();
+        return await context.Clients
+            .Where(c => c.Name.Contains(searchTerm) || c.Email.Contains(searchTerm))
+            .ToListAsync();
     }
 
     public async Task<bool> ExistsWithEmailAsync(string email, int? excludeId = null)
