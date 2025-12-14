@@ -35,6 +35,8 @@ public class ClientRepository (GymManagementContext context): IClientRepository
             .FirstOrDefaultAsync(c => c.ClientId == clientId);
     }
 
+
+
     public async Task<Client?> GetByIdWithEnrollmentsAsync(int clientId)
     {
         return await context.Clients
@@ -47,14 +49,22 @@ public class ClientRepository (GymManagementContext context): IClientRepository
         throw new NotImplementedException();
     }
 
-    public Task<bool> ExistsWithEmailAsync(string email, int? excludeId = null)
+    public async Task<bool> ExistsWithEmailAsync(string email, int? excludeId = null)
     {
-        throw new NotImplementedException();
+        var query = context.Clients.Where(c => c.Email == email);
+
+        if (excludeId.HasValue)
+        {
+            query = query.Where(c => c.ClientId != excludeId.Value);
+        }
+
+        return await query.AnyAsync();
     }
 
     public Task UpdateAsync(Client client)
     {
-        throw new NotImplementedException();
+        context.Clients.Update(client);
+        return Task.CompletedTask;
     }
 
     public Task RemoveAsync(Client client)
