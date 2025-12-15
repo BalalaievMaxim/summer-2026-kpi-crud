@@ -1,18 +1,18 @@
-using GymManagement.Core.Entities;
+﻿using GymManagement.Core.Entities;
 using GymManagement.Core.Exceptions;
 using GymManagement.Core.Interfaces;
 using GymManagement.Core.DTOs;
 
 namespace GymManagement.Application.Services;
 
-public class ClassSchedulingService : IClassSchedulingService
+public class ClassService : IClassService
 {
     private readonly IClassRepository _classRepository;
     private readonly ICoachRepository _coachRepository;
     private readonly IClassTypeRepository _classTypeRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public ClassSchedulingService(
+    public ClassService(
         IClassRepository classRepository,
         ICoachRepository coachRepository,
         IClassTypeRepository classTypeRepository,
@@ -24,7 +24,6 @@ public class ClassSchedulingService : IClassSchedulingService
         _unitOfWork = unitOfWork;
     }
 
-    // create class with validation
     public async Task<Class> CreateClassAsync(
         int classTypeId, 
         int coachId, 
@@ -35,7 +34,7 @@ public class ClassSchedulingService : IClassSchedulingService
         var classType = await _classTypeRepository.GetByIdAsync(classTypeId);
         if (classType == null)
             throw new NotFoundException($"ClassType with ID {classTypeId} not found.");
-            
+
         var coach = await _coachRepository.GetByIdAsync(coachId);
         if (coach == null)
             throw new NotFoundException($"Coach with ID {coachId} not found.");
@@ -53,7 +52,6 @@ public class ClassSchedulingService : IClassSchedulingService
             throw new InvalidOperationException(
                 $"Coach {coach.Name} already has a class scheduled during this time.");
 
-        // create class
         var newClass = new Class
         {
             ClassTypeId = classTypeId,
@@ -70,7 +68,6 @@ public class ClassSchedulingService : IClassSchedulingService
         return newClass;
     }
 
-    // delete class
     public async Task<bool> DeleteClassAsync(int classId)
     {
         var classEntity = await _classRepository.GetByIdAsync(classId);
@@ -86,7 +83,6 @@ public class ClassSchedulingService : IClassSchedulingService
         return true;
     }
 
-
     public async Task<IEnumerable<Class>> GetScheduleForDateAsync(DateTime date)
     {
         return await _classRepository.GetScheduleForDateAsync(date);
@@ -97,7 +93,6 @@ public class ClassSchedulingService : IClassSchedulingService
         var endOfWeek = startOfWeek.AddDays(7);
         return await _classRepository.GetScheduleForDateRangeAsync(startOfWeek, endOfWeek);
     }
-
 
     public async Task<IEnumerable<ClassAttendanceDto>> GetClassAttendanceAnalyticsAsync(
         DateTime startDate, 
