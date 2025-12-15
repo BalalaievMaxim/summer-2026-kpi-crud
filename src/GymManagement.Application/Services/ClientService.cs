@@ -72,6 +72,6 @@ public class ClientService : IClientService
 
     public Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync()
     {
-        throw new NotImplementedException();
+        return _clientRepository.GetClientActivityAnalyticsAsync();
     }
 }
