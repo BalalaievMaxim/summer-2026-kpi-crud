@@ -1,13 +1,10 @@
 using GymManagement.Core.Entities;
 using GymManagement.Core.Interfaces;
-using GymManagement.Application.DTOs;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using GymManagement.Core.DTOs;
 
 namespace GymManagement.Application.Services;
 
-public class EnrollmentService
+public class EnrollmentService : IEnrollmentService
 {
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IClientRepository _clientRepository;

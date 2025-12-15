@@ -8,4 +8,5 @@ public interface IMembershipRepository
     Task<List<Membership>> GetActiveMembershipsByClientAsync(int clientId);
     Task MarkAsActiveMembershipAsync(int membershipId);
     Task<List<Membership>> GetAllActiveMembershipReferencedOnMembershipPlan(int planId);
+    Task<Membership?> GetPendingMembershipByClientAsync(int clientId);
 }

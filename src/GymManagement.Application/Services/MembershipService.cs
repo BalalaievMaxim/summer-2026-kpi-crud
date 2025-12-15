@@ -11,7 +11,7 @@ public class MembershipService(
     IMembershipPlanRepository membershipPlanRepository,
     IInvoiceRepository invoiceRepository,
     IUnitOfWork unitOfWork
-    )
+    ) : IMembershipService
 {
     public async Task PurchaseMembershipAsync(int clientId, int planId, PaymentMethod method, string? notes)
     {
@@ -36,9 +36,8 @@ public class MembershipService(
             IsActive = false 
         };
 
-        var invoice = await invoiceService.CreateInvoiceAsync(clientId, method, planId, notes);
+        await invoiceService.CreateInvoiceAsync(clientId, method, planId, notes);
         
-        await invoiceRepository.AddAsync(invoice);
         await membershipRepository.AddAsync(membership);
         
         await unitOfWork.SaveChangesAsync();

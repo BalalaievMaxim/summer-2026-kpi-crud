@@ -24,7 +24,7 @@ public class Membership
     public MembershipPlan MembershipPlan { get; set; } = null!;
 
     [Column("start_date")]
-    public DateOnly StartDate { get; set; } // Використовуємо DateOnly для типу SQL DATE
+    public DateOnly StartDate { get; set; }
 
     [Column("end_date")]
     public DateOnly EndDate { get; set; }

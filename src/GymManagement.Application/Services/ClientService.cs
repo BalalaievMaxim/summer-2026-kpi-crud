@@ -4,10 +4,11 @@ using System;
 using System.Threading.Tasks;
 using GymManagement.Core.Entities;
 using System.Collections.Generic;
+using GymManagement.Core.DTOs;
 
 namespace GymManagement.Application.Services;
 
-public class ClientService
+public class ClientService : IClientService
 {
     private readonly IClientRepository _clientRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -67,5 +68,10 @@ public class ClientService
     public async Task<List<Client>> SearchClientsAsync(string searchTerm)
     {
         return await _clientRepository.SearchByNameOrEmailAsync(searchTerm);
+    }
+
+    public Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync()
+    {
+        return _clientRepository.GetClientActivityAnalyticsAsync();
     }
 }

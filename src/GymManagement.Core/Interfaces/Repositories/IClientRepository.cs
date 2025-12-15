@@ -1,6 +1,7 @@
 ﻿using GymManagement.Core.Entities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using GymManagement.Core.DTOs;
 
 namespace GymManagement.Core.Interfaces;
 
@@ -16,4 +17,5 @@ public interface IClientRepository
     Task UpdateAsync(Client client);
     Task RemoveAsync(Client client);
     Task<List<Client>> ListAsync();
+    Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync();
 }

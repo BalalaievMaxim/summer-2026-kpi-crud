@@ -55,8 +55,7 @@ public class InvoiceService(
 
         invoice.Status = nameof(PaymentStatus.Paid).ToLower();
 
-        var memberships = await membershipRepository.GetActiveMembershipsByClientAsync(invoice.ClientId);
-        var membership = memberships.FirstOrDefault();
+        var membership = await membershipRepository.GetPendingMembershipByClientAsync(invoice.ClientId);
 
         if (membership != null)
         {

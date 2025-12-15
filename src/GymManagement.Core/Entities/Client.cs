@@ -33,7 +33,6 @@ public class Client
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Навігаційні властивості
     public ICollection<Membership> Memberships { get; set; } = new List<Membership>();
     public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
