@@ -33,6 +33,16 @@ public class ClassController : ControllerBase
         return CreatedAtAction(nameof(GetScheduleForDate), new { date = newClass.StartTime.Date }, newClass);
     }
 
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Class>> UpdateClass(int id, [FromBody] UpdateClassRequest request)
+    {
+        var updatedClass = await _classService.UpdateClassAsync(id, request.StartTime, request.EndTime);
+        if (updatedClass == null)
+            return NotFound($"Class with ID {id} not found.");
+
+        return Ok(updatedClass);
+    }
+
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteClass(int id)
     {
@@ -78,3 +88,5 @@ public class ClassController : ControllerBase
 }
 
 public record CreateClassRequest(int ClassTypeId, int CoachId, DateTime StartTime, DateTime EndTime, int Capacity);
+public record UpdateClassRequest(DateTime StartTime, DateTime EndTime);
+

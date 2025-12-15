@@ -67,6 +67,44 @@ public class ClassService : IClassService
         return newClass;
     }
 
+    public async Task<Class?> UpdateClassAsync(int classId, DateTime newStartTime, DateTime newEndTime)
+    {
+        var classEntity = await _classRepository.GetByIdAsync(classId);
+        if (classEntity == null)
+            return null;
+
+        // Перевірка чи заняття вже почалося
+        if (classEntity.StartTime < DateTime.UtcNow)
+            throw new InvalidOperationException("Cannot update a class that has already started.");
+
+        // Валідація нового часу
+        if (newStartTime >= newEndTime)
+            throw new InvalidOperationException("Start time must be before end time.");
+
+        if (newStartTime < DateTime.UtcNow)
+            throw new InvalidOperationException("Cannot schedule a class in the past.");
+
+        // Перевірка конфлікту часу для тренера (виключаючи поточне заняття)
+        var hasConflict = await _classRepository.HasTimeConflictForCoachAsync(
+            classEntity.CoachId, 
+            newStartTime, 
+            newEndTime, 
+            classId); // excludeClassId
+        
+        if (hasConflict)
+            throw new InvalidOperationException(
+                "Coach already has a class scheduled during this time.");
+
+        // Оновлення часу
+        classEntity.StartTime = newStartTime;
+        classEntity.EndTime = newEndTime;
+
+        await _classRepository.UpdateAsync(classEntity);
+        await _unitOfWork.SaveChangesAsync();
+
+        return classEntity;
+    }
+
     public async Task<bool> DeleteClassAsync(int classId)
     {
         var classEntity = await _classRepository.GetByIdAsync(classId);

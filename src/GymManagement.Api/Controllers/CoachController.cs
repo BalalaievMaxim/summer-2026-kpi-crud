@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Interfaces;
@@ -11,10 +13,17 @@ namespace GymManagement.Api.Controllers;
 public class CoachController : ControllerBase
 {
     private readonly ICoachRepository _coachRepository;
+    private readonly IClassRepository _classRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CoachController(ICoachRepository coachRepository)
+    public CoachController(
+        ICoachRepository coachRepository, 
+        IClassRepository classRepository,
+        IUnitOfWork unitOfWork)
     {
         _coachRepository = coachRepository;
+        _classRepository = classRepository;
+        _unitOfWork = unitOfWork;
     }
 
     [HttpGet]
@@ -67,9 +76,28 @@ public class CoachController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {
-        var result = await _coachRepository.DeleteAsync(id);
-        if (!result)
+        var coach = await _coachRepository.GetByIdAsync(id);
+        if (coach == null)
             return NotFound($"Coach with ID {id} not found.");
+
+        // CASCADE DELETE: Видалити всі майбутні класи тренера
+        var futureClasses = await _classRepository.GetUpcomingClassesByCoachAsync(id);
+        
+        foreach (var classEntity in futureClasses)
+        {
+            // Перевірка чи є записані клієнти
+            if (classEntity.Enrollments.Count > 0)
+            {
+                return BadRequest(
+                    $"Cannot delete coach. Class '{classEntity.ClassType.Name}' on {classEntity.StartTime:yyyy-MM-dd HH:mm} has {classEntity.Enrollments.Count} enrolled client(s). Please cancel enrollments first.");
+            }
+            
+            await _classRepository.DeleteAsync(classEntity.ClassId);
+        }
+
+        // Видалити тренера
+        await _coachRepository.DeleteAsync(id);
+        await _unitOfWork.SaveChangesAsync();
 
         return NoContent();
     }
