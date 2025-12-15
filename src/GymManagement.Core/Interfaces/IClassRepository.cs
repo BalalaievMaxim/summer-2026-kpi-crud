@@ -1,10 +1,12 @@
 using GymManagement.Core.Entities;
+using System.Threading.Tasks;
 
 namespace GymManagement.Core.Interfaces;
 
 public interface IClassRepository
 {
     Task<Class?> GetByIdAsync(int id);
+    Task<Class?> GetByIdWithEnrollmentsAsync(int classId);
     Task<IEnumerable<Class>> GetAllAsync();
     Task<Class> CreateAsync(Class classEntity);
     Task<Class?> UpdateAsync(Class classEntity);

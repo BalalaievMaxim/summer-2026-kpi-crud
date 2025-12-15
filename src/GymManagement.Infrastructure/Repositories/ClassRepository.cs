@@ -2,31 +2,33 @@ using GymManagement.Core.Entities;
 using GymManagement.Core.Interfaces;
 using GymManagement.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace GymManagement.Infrastructure.Repositories;
 
-public class ClassRepository : IClassRepository
+public class ClassRepository(GymManagementContext context) : IClassRepository
 {
-    private readonly GymManagementContext _context;
-
-    public ClassRepository(GymManagementContext context)
-    {
-        _context = context;
-    }
-
     public async Task<Class?> GetByIdAsync(int id)
     {
-        return await _context.Classes
+        return await context.Classes
             .Include(c => c.ClassType)
             .Include(c => c.Coach)
             .Include(c => c.Enrollments)
                 .ThenInclude(e => e.Client)
             .FirstOrDefaultAsync(c => c.ClassId == id);
     }
+    
+    public async Task<Class?> GetByIdWithEnrollmentsAsync(int classId)
+    {
+        return await context.Classes
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.ClassId == classId);
+    }
 
     public async Task<IEnumerable<Class>> GetAllAsync()
     {
-        return await _context.Classes
+        return await context.Classes
             .Include(c => c.ClassType)
             .Include(c => c.Coach)
             .OrderBy(c => c.StartTime)
@@ -35,8 +37,8 @@ public class ClassRepository : IClassRepository
 
     public async Task<Class> CreateAsync(Class classEntity)
     {
-        _context.Classes.Add(classEntity);
-        await _context.SaveChangesAsync();
+        context.Classes.Add(classEntity);
+        await context.SaveChangesAsync();
         
         // return include for full inf
         return (await GetByIdAsync(classEntity.ClassId))!;
@@ -44,7 +46,7 @@ public class ClassRepository : IClassRepository
 
     public async Task<Class?> UpdateAsync(Class classEntity)
     {
-        var existing = await _context.Classes.FindAsync(classEntity.ClassId);
+        var existing = await context.Classes.FindAsync(classEntity.ClassId);
         if (existing == null)
         {
             return null;
@@ -56,21 +58,21 @@ public class ClassRepository : IClassRepository
         existing.EndTime = classEntity.EndTime;
         existing.Capacity = classEntity.Capacity;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         
         return await GetByIdAsync(existing.ClassId);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var classEntity = await _context.Classes.FindAsync(id);
+        var classEntity = await context.Classes.FindAsync(id);
         if (classEntity == null)
         {
             return false;
         }
 
-        _context.Classes.Remove(classEntity);
-        await _context.SaveChangesAsync();
+        context.Classes.Remove(classEntity);
+        await context.SaveChangesAsync();
         return true;
     }
 
@@ -81,7 +83,7 @@ public class ClassRepository : IClassRepository
         var startOfDay = date.Date;
         var endOfDay = startOfDay.AddDays(1);
 
-        return await _context.Classes
+        return await context.Classes
             .Include(c => c.ClassType)
             .Include(c => c.Coach)
             .Where(c => c.StartTime >= startOfDay && c.StartTime < endOfDay)
@@ -91,7 +93,7 @@ public class ClassRepository : IClassRepository
 
     public async Task<IEnumerable<Class>> GetScheduleForDateRangeAsync(DateTime startDate, DateTime endDate)
     {
-        return await _context.Classes
+        return await context.Classes
             .Include(c => c.ClassType)
             .Include(c => c.Coach)
             .Where(c => c.StartTime >= startDate && c.StartTime <= endDate)
@@ -107,7 +109,7 @@ public class ClassRepository : IClassRepository
         DateTime endTime, 
         int? excludeClassId = null)
     {
-        var query = _context.Classes
+        var query = context.Classes
             .Where(c => c.CoachId == coachId);
 
         if (excludeClassId.HasValue)
@@ -126,7 +128,7 @@ public class ClassRepository : IClassRepository
     {
         var now = DateTime.UtcNow;
         
-        return await _context.Classes
+        return await context.Classes
             .Include(c => c.ClassType)
             .Where(c => c.CoachId == coachId && c.StartTime > now)
             .OrderBy(c => c.StartTime)
@@ -135,7 +137,7 @@ public class ClassRepository : IClassRepository
 
     public async Task<IEnumerable<Class>> GetClassesByCoachAsync(int coachId, DateTime startDate, DateTime endDate)
     {
-        return await _context.Classes
+        return await context.Classes
             .Include(c => c.ClassType)
             .Include(c => c.Enrollments)
             .Where(c => c.CoachId == coachId 
