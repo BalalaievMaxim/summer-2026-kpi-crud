@@ -13,20 +13,25 @@ builder.Services.AddDbContext<GymManagementContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Реєстрація репозиторіїв
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
+builder.Services.AddScoped<IMembershipPlanRepository, MembershipPlanRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<IMembershipPlanRepository, MembershipPlanRepository>();
-
 builder.Services.AddScoped<ICoachRepository, CoachRepository>();
 builder.Services.AddScoped<IClassTypeRepository, ClassTypeRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 
+// Реєстрація сервісів
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<MembershipService>();
-builder.Services.AddScoped<MembershipPlanService>();
 builder.Services.AddScoped<IClassService, ClassService>();
+builder.Services.AddScoped<IMembershipService, MembershipService>();
+builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

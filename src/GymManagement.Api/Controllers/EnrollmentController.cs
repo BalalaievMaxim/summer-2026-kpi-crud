@@ -1,4 +1,4 @@
-using GymManagement.Application.DTOs;
+using GymManagement.Core.DTOs;
 using GymManagement.Application.Services;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Exceptions;

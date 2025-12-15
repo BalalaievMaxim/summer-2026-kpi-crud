@@ -8,7 +8,7 @@ using GymManagement.Core.DTOs;
 
 namespace GymManagement.Application.Services;
 
-public class ClientService
+public class ClientService : IClientService
 {
     private readonly IClientRepository _clientRepository;
     private readonly IUnitOfWork _unitOfWork;

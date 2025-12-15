@@ -1,4 +1,4 @@
-namespace GymManagement.Application.DTOs;
+namespace GymManagement.Core.DTOs;
 
 public record CreateEnrollmentDto
 {

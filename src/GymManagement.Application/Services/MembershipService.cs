@@ -11,7 +11,7 @@ public class MembershipService(
     IMembershipPlanRepository membershipPlanRepository,
     IInvoiceRepository invoiceRepository,
     IUnitOfWork unitOfWork
-    )
+    ) : IMembershipService
 {
     public async Task PurchaseMembershipAsync(int clientId, int planId, PaymentMethod method, string? notes)
     {
