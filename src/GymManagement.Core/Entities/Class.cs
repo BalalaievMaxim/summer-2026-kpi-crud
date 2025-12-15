@@ -31,5 +31,8 @@ public class Class
     [Column("capacity")]
     public int Capacity { get; set; }
 
+    [Column("current_enrollment")]
+    public int CurrentEnrollment { get; set; } = 0;
+
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }
