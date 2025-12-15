@@ -26,7 +26,7 @@ builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<MembershipService>();
 builder.Services.AddScoped<MembershipPlanService>();
-builder.Services.AddScoped<IClassShedulingService, ClassSchedulingService>();
+builder.Services.AddScoped<IClassSchedulingService, ClassSchedulingService>();
 builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<EnrollmentService>();
 
