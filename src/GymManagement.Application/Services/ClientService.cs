@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using GymManagement.Core.Entities;
 using System.Collections.Generic;
+using GymManagement.Core.DTOs;
 
 namespace GymManagement.Application.Services;
 
@@ -67,5 +68,10 @@ public class ClientService
     public async Task<List<Client>> SearchClientsAsync(string searchTerm)
     {
         return await _clientRepository.SearchByNameOrEmailAsync(searchTerm);
+    }
+
+    public Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync()
+    {
+        throw new NotImplementedException();
     }
 }
