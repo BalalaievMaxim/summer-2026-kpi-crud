@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using GymManagement.Application.DTOs;
-using GymManagement.Application.Services;
+using GymManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using GymManagement.Core.Entities;
 using GymManagement.Core.DTOs;
@@ -12,7 +11,7 @@ namespace GymManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/clients")]
-public class ClientController(ClientService clientService) : ControllerBase
+public class ClientController(IClientService clientService) : ControllerBase
 {
     [HttpPut("{clientId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
