@@ -1,7 +1,10 @@
+using System;
+using System.Threading.Tasks;
 using GymManagement.Core.DTOs;
 using GymManagement.Application.Services;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Exceptions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.Api.Controllers;
