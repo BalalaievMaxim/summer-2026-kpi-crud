@@ -27,6 +27,8 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<MembershipService>();
 builder.Services.AddScoped<MembershipPlanService>();
 builder.Services.AddScoped<IClassShedulingService, ClassShedulingService>();
+builder.Services.AddScoped<ClientService>();
+builder.Services.AddScoped<EnrollmentService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
