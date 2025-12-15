@@ -1,13 +1,19 @@
-﻿using GymManagement.Application.DTOs;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using GymManagement.Application.DTOs;
 using GymManagement.Application.Services;
 using GymManagement.Core.Entities;
+using GymManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class MembershipPlanController(MembershipPlanService membershipPlanService) : ControllerBase
+[Route("api/v1/membership-plans")]
+public class MembershipPlanController(
+    MembershipPlanService membershipPlanService,
+    IMembershipPlanRepository planRepository) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreatePlan([FromBody] CreateMembershipPlanDto dto)
@@ -19,11 +25,11 @@ public class MembershipPlanController(MembershipPlanService membershipPlanServic
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { error = ex.Message });
         }
     }
 
@@ -37,15 +43,15 @@ public class MembershipPlanController(MembershipPlanService membershipPlanServic
         }
         catch (InvalidOperationException ex)
         {
-            return Conflict(ex.Message); 
+            return Conflict(new { error = ex.Message }); 
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            return NotFound(new { error = ex.Message });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { error = ex.Message });
         }
     }
 
@@ -59,7 +65,15 @@ public class MembershipPlanController(MembershipPlanService membershipPlanServic
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { error = ex.Message });
         }
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetPlanById(int id)
+    {
+        var plan = await planRepository.GetMembershipPlanByIdAsync(id);
+        if (plan == null) return NotFound();
+        return Ok(plan);
     }
 }

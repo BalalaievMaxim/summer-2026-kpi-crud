@@ -88,7 +88,6 @@ public static class DbInitializer
             var memberships = new List<Membership>();
             var invoices = new List<Invoice>();
 
-            // Місяць 1 (2 місяці тому)
             var date1 = DateTime.Now.AddMonths(-2);
             memberships.Add(new Membership { 
                 ClientId = dbClients[0].ClientId, PlanId = dbPlans[0].PlanId, 
