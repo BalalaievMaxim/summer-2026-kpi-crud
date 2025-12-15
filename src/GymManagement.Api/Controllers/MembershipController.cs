@@ -12,7 +12,7 @@ namespace GymManagement.API.Controllers;
 [ApiController]
 [Route("api/v1/memberships")]
 public class MembershipController(
-    MembershipService membershipService,
+    IMembershipService membershipService,
     IMembershipRepository membershipRepository) : ControllerBase
 {
     [HttpPost]

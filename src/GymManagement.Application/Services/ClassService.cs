@@ -58,8 +58,7 @@ public class ClassService : IClassService
             CoachId = coachId,
             StartTime = startTime,
             EndTime = endTime,
-            Capacity = capacity,
-            CurrentEnrollment = 0
+            Capacity = capacity
         };
 
         await _classRepository.CreateAsync(newClass);
@@ -74,7 +73,7 @@ public class ClassService : IClassService
         if (classEntity == null)
             return false;
 
-        if (classEntity.CurrentEnrollment > 0)
+        if (classEntity.Enrollments.Count > 0)
             throw new InvalidOperationException("Cannot delete a class with enrolled clients.");
 
         await _classRepository.DeleteAsync(classId);
@@ -107,9 +106,9 @@ public class ClassService : IClassService
             CoachName = c.Coach.Name,
             StartTime = c.StartTime,
             Capacity = c.Capacity,
-            CurrentEnrollment = c.CurrentEnrollment,
+            CurrentEnrollment = c.Enrollments.Count,
             OccupancyRate = c.Capacity > 0 
-                ? (decimal)c.CurrentEnrollment / c.Capacity * 100 
+                ? (decimal)c.Enrollments.Count / c.Capacity * 100 
                 : 0
         }).OrderByDescending(dto => dto.OccupancyRate);
     }
@@ -127,7 +126,7 @@ public class ClassService : IClassService
 
         var totalHours = classes.Sum(c => (c.EndTime - c.StartTime).TotalHours);
         var averageSize = classes.Any() 
-            ? (int)classes.Average(c => c.CurrentEnrollment) 
+            ? (int)classes.Average(c => c.Enrollments.Count)
             : 0;
 
         return new CoachWorkloadDto

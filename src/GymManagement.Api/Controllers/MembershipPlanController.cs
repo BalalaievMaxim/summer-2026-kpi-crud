@@ -11,8 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace GymManagement.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class MembershipPlanController(MembershipPlanService membershipPlanService) : ControllerBase
+[Route("/api/v1/membership-plans")]
+public class MembershipPlanController(IMembershipPlanService membershipPlanService) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreatePlan([FromBody] CreateMembershipPlanDto dto)
@@ -61,6 +61,30 @@ public class MembershipPlanController(MembershipPlanService membershipPlanServic
         {
             var plans = await membershipPlanService.GetPlansAsync(minPrice, maxPrice);
             return Ok(plans);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+    
+    [HttpGet("{id}")]
+    public async Task<ActionResult<MembershipPlan>> GetPlan(int id)
+    {
+        try
+        {
+            var plan = await membershipPlanService.GetPlanByIdAsync(id);
+            
+            if (plan == null)
+            {
+                return NotFound($"Plan with ID {id} not found.");
+            }
+            
+            return Ok(plan);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
         catch (Exception ex)
         {

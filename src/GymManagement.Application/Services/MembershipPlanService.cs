@@ -55,4 +55,9 @@ public class MembershipPlanService(
     {
         return await membershipPlanRepository.GetPlansAsync(minPrice, maxPrice);
     }
+    
+    public async Task<MembershipPlan?> GetPlanByIdAsync(int id)
+    {
+        return await membershipPlanRepository.GetMembershipPlanByIdAsync(id); 
+    }
 }
