@@ -1,9 +1,15 @@
+using System;
 using System.Text.Json.Serialization;
 using GymManagement.Core.Interfaces;
 using GymManagement.Application.Services;
 using GymManagement.Infrastructure.Data;
 using GymManagement.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -13,20 +19,25 @@ builder.Services.AddDbContext<GymManagementContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Реєстрація репозиторіїв
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
+builder.Services.AddScoped<IMembershipPlanRepository, MembershipPlanRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<IMembershipPlanRepository, MembershipPlanRepository>();
-
 builder.Services.AddScoped<ICoachRepository, CoachRepository>();
 builder.Services.AddScoped<IClassTypeRepository, ClassTypeRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 
+// Реєстрація сервісів
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<MembershipService>();
-builder.Services.AddScoped<MembershipPlanService>();
 builder.Services.AddScoped<IClassService, ClassService>();
+builder.Services.AddScoped<IMembershipService, MembershipService>();
+builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -67,3 +78,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
