@@ -75,8 +75,8 @@ public class ClientRepository(GymManagementContext context) : IClientRepository
         return Task.CompletedTask;
     }
 
-    public Task<List<Client>> ListAsync()
+    public async Task<List<Client>> ListAsync()
     {
-        throw new NotImplementedException();
+        return await context.Clients.ToListAsync();
     }
 }
