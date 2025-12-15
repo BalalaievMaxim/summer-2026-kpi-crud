@@ -36,9 +36,8 @@ public class MembershipService(
             IsActive = false 
         };
 
-        var invoice = await invoiceService.CreateInvoiceAsync(clientId, method, planId, notes);
+        await invoiceService.CreateInvoiceAsync(clientId, method, planId, notes);
         
-        await invoiceRepository.AddAsync(invoice);
         await membershipRepository.AddAsync(membership);
         
         await unitOfWork.SaveChangesAsync();

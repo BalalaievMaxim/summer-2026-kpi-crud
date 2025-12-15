@@ -33,4 +33,12 @@ public class MembershipRepository(GymManagementContext context) : IMembershipRep
             .Where(m => m.PlanId == planId && m.IsActive == true)
             .ToListAsync();
     }
+    
+    public async Task<Membership?> GetPendingMembershipByClientAsync(int clientId)
+    {
+        return await context.Memberships
+            .Where(m => m.ClientId == clientId && m.IsActive == false)
+            .OrderByDescending(m => m.StartDate) 
+            .FirstOrDefaultAsync();
+    }
 }

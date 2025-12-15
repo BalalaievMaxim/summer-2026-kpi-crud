@@ -1,9 +1,15 @@
+using System;
 using System.Text.Json.Serialization;
 using GymManagement.Core.Interfaces;
 using GymManagement.Application.Services;
 using GymManagement.Infrastructure.Data;
 using GymManagement.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -72,3 +78,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

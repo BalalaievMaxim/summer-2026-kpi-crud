@@ -1,9 +1,14 @@
-﻿using GymManagement.Application.DTOs;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using GymManagement.Application.DTOs;
 using GymManagement.Application.Services;
 using GymManagement.Core.DTOs;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Exceptions;
 using GymManagement.Core.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.Api.Controllers;
