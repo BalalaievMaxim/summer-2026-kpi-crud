@@ -14,19 +14,17 @@ public class MembershipRepository(GymManagementContext context) : IMembershipRep
     
     public async Task<List<Membership>> GetActiveMembershipsByClientAsync(int clientId)
     {
+        var today = DateOnly.FromDateTime(DateTime.Now);
         return await context.Memberships
-            .Where(m => m.ClientId == clientId && m.IsActive == true && m.EndDate > DateOnly.FromDateTime(DateTime.Now))
+            .Where(m => m.ClientId == clientId && m.IsActive == true && m.EndDate > today)
             .ToListAsync();
     }
 
     public async Task MarkAsActiveMembershipAsync(int membershipId)
     {
         await context.Memberships
-            .Where(m =>  m.MembershipId == membershipId)
-            .ExecuteUpdateAsync(m => m.
-                SetProperty(e => e.IsActive, true));
-        
-        await AddAsync(await context.Memberships.Where(i => i.MembershipId == membershipId).FirstAsync());
+            .Where(m => m.MembershipId == membershipId)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.IsActive, true));
     }
 
     public async Task<List<Membership>> GetAllActiveMembershipReferencedOnMembershipPlan(int planId)
