@@ -1,4 +1,6 @@
-﻿using GymManagement.Core.Entities;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using GymManagement.Core.Entities;
 using GymManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
