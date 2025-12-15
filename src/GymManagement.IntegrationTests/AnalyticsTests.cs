@@ -6,10 +6,8 @@ using Xunit;
 
 namespace GymManagement.IntegrationTests;
 
-public class AnalyticsTests : BaseIntegrationTest
+public class AnalyticsTests(GymApiFactory factory) : BaseIntegrationTest(factory)
 {
-    public AnalyticsTests(GymApiFactory factory) : base(factory) { }
-
     [Fact]
     public async Task RevenueAnalytics_Should_Aggregate_Correctly()
     {

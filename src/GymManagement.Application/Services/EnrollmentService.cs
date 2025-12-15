@@ -37,6 +37,11 @@ public class EnrollmentService : IEnrollmentService
             throw new InvalidOperationException("Class not found.");
         }
 
+        if (@class.Enrollments.Any(e => e.ClientId == createEnrollmentDto.ClientId))
+        {
+            throw new InvalidOperationException("Client is already enrolled in this class.");
+        }
+
         if (@class.Enrollments.Count >= @class.Capacity)
         {
             throw new InvalidOperationException("Class is full.");
