@@ -1,13 +1,14 @@
-﻿using GymManagement.Application.DTOs;
+﻿using GymManagement.Core.DTOs;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Interfaces;
+
 
 namespace GymManagement.Application.Services;
 
 public class MembershipPlanService(
     IMembershipPlanRepository membershipPlanRepository, 
     IMembershipRepository membershipRepository, 
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork) : IMembershipPlanService
 {
     public async Task CreatePlanAsync(CreateMembershipPlanDto dto)
     {
