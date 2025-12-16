@@ -1,4 +1,4 @@
-namespace GymManagement.Core.DTOs;
+﻿namespace GymManagement.Core.DTOs;
 
 public class CoachWorkloadDto
 {

@@ -24,7 +24,7 @@ public class GymApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             services.AddDbContext<GymManagementContext>(options =>
             {
-                options.UseNpgsql(_dbContainer.GetConnectionString());
+                options.UseNpgsql(_dbContainer.GetConnectionString()).ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             });
         });
     }

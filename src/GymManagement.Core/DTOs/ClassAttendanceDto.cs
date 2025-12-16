@@ -1,4 +1,4 @@
-namespace GymManagement.Core.DTOs;
+﻿namespace GymManagement.Core.DTOs;
 
 public class ClassAttendanceDto
 {
@@ -8,5 +8,5 @@ public class ClassAttendanceDto
     public DateTime StartTime { get; set; }
     public int Capacity { get; set; }
     public int CurrentEnrollment { get; set; }
-    public decimal OccupancyRate { get; set; } // CurrentEnrollment / Capacity * 100
+    public decimal OccupancyRate { get; set; }
 }

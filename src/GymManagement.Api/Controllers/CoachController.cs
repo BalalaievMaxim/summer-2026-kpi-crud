@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Interfaces;
@@ -11,17 +13,17 @@ namespace GymManagement.Api.Controllers;
 public class CoachController : ControllerBase
 {
     private readonly ICoachRepository _coachRepository;
+    private readonly IClassRepository _classRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CoachController(ICoachRepository coachRepository)
+    public CoachController(
+        ICoachRepository coachRepository, 
+        IClassRepository classRepository,
+        IUnitOfWork unitOfWork)
     {
         _coachRepository = coachRepository;
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Coach>>> GetAll()
-    {
-        var coaches = await _coachRepository.GetAllAsync();
-        return Ok(coaches);
+        _classRepository = classRepository;
+        _unitOfWork = unitOfWork;
     }
 
     [HttpGet("{id}")]
@@ -29,68 +31,52 @@ public class CoachController : ControllerBase
     {
         var coach = await _coachRepository.GetByIdAsync(id);
         if (coach == null)
-            return NotFound($"Coach with ID {id} not found.");
-        
+            return NotFound();
         return Ok(coach);
     }
 
-    [HttpPost]
-    public async Task<ActionResult<Coach>> Create([FromBody] CreateCoachRequest request)
+    [HttpGet("specialization/{specialization}")]
+    public async Task<ActionResult<List<Coach>>> GetBySpecialization(string specialization)
     {
-        var coach = new Coach
-        {
-            Name = request.Name,
-            Specialization = request.Specialization,
-            Email = request.Email,
-            Password = request.Password
-        };
-
-        var created = await _coachRepository.CreateAsync(coach);
-        return CreatedAtAction(nameof(GetById), new { id = created.CoachId }, created);
-    }
-
-    [HttpPut("{id}")]
-    public async Task<ActionResult<Coach>> Update(int id, [FromBody] UpdateCoachRequest request)
-    {
-        var coach = await _coachRepository.GetByIdAsync(id);
-        if (coach == null)
-            return NotFound($"Coach with ID {id} not found.");
-
-        coach.Name = request.Name;
-        coach.Specialization = request.Specialization;
-        coach.Email = request.Email;
-
-        var updated = await _coachRepository.UpdateAsync(coach);
-        return Ok(updated);
+        var coaches = await _coachRepository.GetBySpecializationAsync(specialization);
+        return Ok(coaches);
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {
-        var result = await _coachRepository.DeleteAsync(id);
-        if (!result)
-            return NotFound($"Coach with ID {id} not found.");
+        try
+        {
+            var coach = await _coachRepository.GetByIdAsync(id);
+            if (coach == null)
+                return NotFound();
 
-        return NoContent();
-    }
+            var futureClasses = (await _classRepository.GetUpcomingClassesByCoachAsync(id)).ToList();
+            
+            foreach (var classEntity in futureClasses)
+            {
+                var fullClass = await _classRepository.GetByIdAsync(classEntity.ClassId);
+                
+                if (fullClass != null && fullClass.Enrollments.Any())
+                {
+                    return BadRequest(
+                        $"Cannot delete coach. Class '{fullClass.ClassType.Name}' on {fullClass.StartTime:yyyy-MM-dd HH:mm} has {fullClass.Enrollments.Count} enrolled client(s). Please cancel enrollments first.");
+                }
+            }
 
-    [HttpGet("{id}/classes")]
-    public async Task<ActionResult<IEnumerable<Class>>> GetCoachClasses(int id)
-    {
-        var coach = await _coachRepository.GetByIdAsync(id);
-        if (coach == null)
-            return NotFound($"Coach with ID {id} not found.");
+            foreach (var classEntity in futureClasses)
+            {
+                await _classRepository.DeleteAsync(classEntity.ClassId);
+            }
 
-        return Ok(coach.Classes);
-    }
-
-    [HttpGet("specialization/{specialization}")]
-    public async Task<ActionResult<IEnumerable<Coach>>> GetBySpecialization(string specialization)
-    {
-        var coaches = await _coachRepository.GetBySpecializationAsync(specialization);
-        return Ok(coaches);
+            await _coachRepository.DeleteAsync(id);
+            await _unitOfWork.SaveChangesAsync();
+            
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
 }
-
-public record CreateCoachRequest(string Name, string Specialization, string Email, string Password);
-public record UpdateCoachRequest(string Name, string Specialization, string Email);
