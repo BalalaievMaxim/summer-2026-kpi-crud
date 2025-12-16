@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using GymManagement.Core.Enums;
 
-namespace GymManagement.Application.DTOs;
+namespace GymManagement.Core.DTOs;
 
 public class CreateInvoiceRequestDto
 {

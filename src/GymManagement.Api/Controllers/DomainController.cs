@@ -7,12 +7,12 @@ namespace GymManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/test-domain2")]
-public class TestDomain2Controller : ControllerBase
+public class DomainController : ControllerBase
 {
     private readonly ICoachRepository _coachRepo;
     private readonly IClassRepository _classRepo;
 
-    public TestDomain2Controller(ICoachRepository coachRepo, IClassRepository classRepo)
+    public DomainController(ICoachRepository coachRepo, IClassRepository classRepo)
     {
         _coachRepo = coachRepo;
         _classRepo = classRepo;

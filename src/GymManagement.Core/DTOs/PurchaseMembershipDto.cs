@@ -1,6 +1,6 @@
 ﻿using GymManagement.Core.Enums;
 
-namespace GymManagement.Application.DTOs;
+namespace GymManagement.Core.DTOs;
 
 public class PurchaseMembershipDto
 {

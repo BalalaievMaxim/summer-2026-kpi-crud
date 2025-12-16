@@ -1,5 +1,4 @@
 using GymManagement.Core.Interfaces;
-using GymManagement.Application.DTOs;
 using System;
 using System.Threading.Tasks;
 using GymManagement.Core.Entities;

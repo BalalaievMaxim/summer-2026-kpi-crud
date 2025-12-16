@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using GymManagement.Application.DTOs;
 using GymManagement.Core.DTOs;
 using GymManagement.Core.Entities;
 using Microsoft.EntityFrameworkCore;

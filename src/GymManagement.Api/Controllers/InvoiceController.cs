@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using GymManagement.Application.DTOs;
 using GymManagement.Application.Services;
 using GymManagement.Core.DTOs;
 using GymManagement.Core.Entities;
