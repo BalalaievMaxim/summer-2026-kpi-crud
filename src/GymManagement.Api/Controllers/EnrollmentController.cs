@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using GymManagement.Core.DTOs;
-using GymManagement.Application.Services;
+using GymManagement.Core.Interfaces;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Exceptions;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +11,7 @@ namespace GymManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/enrollments")]
-public class EnrollmentController(EnrollmentService enrollmentService) : ControllerBase
+public class EnrollmentController(IEnrollmentService enrollmentService) : ControllerBase
 {
     // запис клієнта на заняття (складний сценарій створення з перевірками)
     [HttpPost]
