@@ -102,7 +102,6 @@ public class ClientRepository(GymManagementContext context) : IClientRepository
                 ses.name AS ""Name"",
                 ses.email AS ""Email"",
                 ses.TotalEnrollments AS ""TotalEnrollments"",
-                -- Віконна функція RANK() OVER для ранжування за кількістю записів
                 RANK() OVER (ORDER BY ses.TotalEnrollments DESC) AS ""ClientRank""
             FROM ClientEnrollmentStats ses
             ORDER BY ""ClientRank"" ASC, ""TotalEnrollments"" DESC;
