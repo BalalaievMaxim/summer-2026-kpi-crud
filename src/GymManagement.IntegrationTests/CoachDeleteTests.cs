@@ -44,6 +44,8 @@ public class CoachDeleteTests : BaseIntegrationTest
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         
+        Context.ChangeTracker.Clear();
+        
         var deletedClass = await Context.Classes.FindAsync(futureClass.ClassId);
         deletedClass.Should().BeNull();
         
@@ -101,6 +103,8 @@ public class CoachDeleteTests : BaseIntegrationTest
         var response = await Client.DeleteAsync($"/api/coach/{coach.CoachId}");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        
+        Context.ChangeTracker.Clear();
         
         var stillExists = await Context.Coaches.FindAsync(coach.CoachId);
         stillExists.Should().NotBeNull();

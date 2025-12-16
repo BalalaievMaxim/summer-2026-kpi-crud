@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using GymManagement.Core.DTOs;
 using GymManagement.Core.Entities;
 using GymManagement.Core.Interfaces;
+using GymManagement.Core.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.Api.Controllers;
@@ -12,81 +13,144 @@ namespace GymManagement.Api.Controllers;
 [Route("api/[controller]")]
 public class ClassController : ControllerBase
 {
-    private readonly IClassService _classService;
+    private readonly IClassRepository _classRepository;
+    private readonly ICoachRepository _coachRepository;
+    private readonly IClassTypeRepository _classTypeRepository;
 
-    public ClassController(IClassService classService)
+    public ClassController(
+        IClassRepository classRepository,
+        ICoachRepository coachRepository,
+        IClassTypeRepository classTypeRepository)
     {
-        _classService = classService;
+        _classRepository = classRepository;
+        _coachRepository = coachRepository;
+        _classTypeRepository = classTypeRepository;
     }
 
     [HttpPost]
-    public async Task<ActionResult<Class>> CreateClass([FromBody] CreateClassRequest request)
+    public async Task<ActionResult<Class>> Create([FromBody] CreateClassRequest request)
     {
-        var newClass = await _classService.CreateClassAsync(
-            request.ClassTypeId,
-            request.CoachId,
-            request.StartTime,
-            request.EndTime,
-            request.Capacity
-        );
+        try
+        {
+            if (request.EndTime <= request.StartTime)
+                return BadRequest("End time must be after start time");
 
-        return CreatedAtAction(nameof(GetScheduleForDate), new { date = newClass.StartTime.Date }, newClass);
+            if (request.Capacity <= 0 || request.Capacity > 10)
+                return BadRequest("Capacity must be between 1 and 10");
+
+            if (!await _classTypeRepository.ExistsAsync(request.ClassTypeId))
+                return BadRequest($"ClassType {request.ClassTypeId} not found");
+
+            if (!await _coachRepository.ExistsAsync(request.CoachId))
+                return BadRequest($"Coach {request.CoachId} not found");
+
+            var hasConflict = await _classRepository.HasTimeConflictForCoachAsync(
+                request.CoachId, request.StartTime, request.EndTime);
+
+            if (hasConflict)
+                return BadRequest("Coach already has a class scheduled during this time");
+
+            var newClass = new Class
+            {
+                ClassTypeId = request.ClassTypeId,
+                CoachId = request.CoachId,
+                StartTime = request.StartTime,
+                EndTime = request.EndTime,
+                Capacity = request.Capacity
+            };
+
+            var created = await _classRepository.CreateAsync(newClass);
+            return CreatedAtAction(nameof(GetById), new { id = created.ClassId }, created);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<Class>> UpdateClass(int id, [FromBody] UpdateClassRequest request)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Class>> GetById(int id)
     {
-        var updatedClass = await _classService.UpdateClassAsync(id, request.StartTime, request.EndTime);
-        if (updatedClass == null)
-            return NotFound($"Class with ID {id} not found.");
-
-        return Ok(updatedClass);
+        var classEntity = await _classRepository.GetByIdAsync(id);
+        if (classEntity == null)
+            return NotFound();
+        return Ok(classEntity);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteClass(int id)
+    [HttpPut("{id}/reschedule")]
+    public async Task<ActionResult<Class>> Reschedule(int id, [FromBody] RescheduleRequest request)
     {
-        var result = await _classService.DeleteClassAsync(id);
-        if (!result)
-            return NotFound($"Class with ID {id} not found.");
+        try
+        {
+            var existing = await _classRepository.GetByIdAsync(id);
+            if (existing == null)
+                return NotFound();
 
-        return NoContent();
+            if (existing.StartTime <= DateTime.UtcNow)
+                return BadRequest("Cannot reschedule a class that has already started");
+
+            if (request.NewEndTime <= request.NewStartTime)
+                return BadRequest("End time must be after start time");
+
+            var hasConflict = await _classRepository.HasTimeConflictForCoachAsync(
+                existing.CoachId, request.NewStartTime, request.NewEndTime, id);
+
+            if (hasConflict)
+                return BadRequest("Coach already has another class scheduled during this time");
+
+            existing.StartTime = request.NewStartTime;
+            existing.EndTime = request.NewEndTime;
+
+            var updated = await _classRepository.UpdateAsync(existing);
+            return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
 
     [HttpGet("schedule/{date}")]
-    public async Task<ActionResult<IEnumerable<Class>>> GetScheduleForDate(DateTime date)
+    public async Task<ActionResult<List<Class>>> GetSchedule(DateTime date)
     {
-        var schedule = await _classService.GetScheduleForDateAsync(date);
+        var schedule = await _classRepository.GetScheduleForDateAsync(date);
         return Ok(schedule);
     }
 
-    [HttpGet("schedule/week")]
-    public async Task<ActionResult<IEnumerable<Class>>> GetScheduleForWeek([FromQuery] DateTime startDate)
-    {
-        var schedule = await _classService.GetScheduleForWeekAsync(startDate);
-        return Ok(schedule);
-    }
-
-    [HttpGet("analytics/attendance")]
-    public async Task<ActionResult<IEnumerable<ClassAttendanceDto>>> GetAttendanceAnalytics(
-        [FromQuery] DateTime startDate,
+    [HttpGet("analytics/coach-efficiency")]
+    public async Task<ActionResult<List<CoachEfficiencyDto>>> GetCoachEfficiency(
+        [FromQuery] DateTime startDate, 
         [FromQuery] DateTime endDate)
     {
-        var analytics = await _classService.GetClassAttendanceAnalyticsAsync(startDate, endDate);
-        return Ok(analytics);
-    }
+        var allCoaches = await _coachRepository.GetAllAsync();
+        var results = new List<CoachEfficiencyDto>();
 
-    [HttpGet("analytics/coach/{coachId}")]
-    public async Task<ActionResult<CoachWorkloadDto>> GetCoachWorkload(
-        int coachId,
-        [FromQuery] DateTime startDate,
-        [FromQuery] DateTime endDate)
-    {
-        var workload = await _classService.GetCoachWorkloadAsync(coachId, startDate, endDate);
-        return Ok(workload);
+        foreach (var coach in allCoaches)
+        {
+            var classes = (await _classRepository.GetClassesByCoachAsync(
+                coach.CoachId, startDate, endDate)).ToList();
+
+            if (classes.Any())
+            {
+                var totalHours = (int)classes.Sum(c => (c.EndTime - c.StartTime).TotalHours);
+                var avgOccupancy = classes.Average(c => 
+                    c.Capacity > 0 ? (double)c.Enrollments.Count / c.Capacity * 100 : 0);
+
+                results.Add(new CoachEfficiencyDto
+                {
+                    CoachId = coach.CoachId,
+                    CoachName = coach.Name,
+                    Specialization = coach.Specialization,
+                    TotalHours = totalHours,
+                    ClassCount = classes.Count,
+                    AverageOccupancyPercent = Math.Round(avgOccupancy, 1)
+                });
+            }
+        }
+
+        return Ok(results);
     }
 }
 
 public record CreateClassRequest(int ClassTypeId, int CoachId, DateTime StartTime, DateTime EndTime, int Capacity);
-public record UpdateClassRequest(DateTime StartTime, DateTime EndTime);
-
+public record RescheduleRequest(DateTime NewStartTime, DateTime NewEndTime);

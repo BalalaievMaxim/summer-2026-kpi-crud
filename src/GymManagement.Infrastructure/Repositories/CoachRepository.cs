@@ -1,4 +1,4 @@
-using GymManagement.Core.Entities;
+﻿using GymManagement.Core.Entities;
 using GymManagement.Core.Interfaces;
 using GymManagement.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -71,7 +71,6 @@ public class CoachRepository : ICoachRepository
         }
 
         _context.Coaches.Remove(coach);
-        await _context.SaveChangesAsync();
         return true;
     }
 
@@ -96,6 +95,8 @@ public class CoachRepository : ICoachRepository
     public async Task<bool> HasScheduledClassesAsync(int coachId, DateTime from, DateTime to)
     {
         return await _context.Classes
-            .AnyAsync(c => c.CoachId == coachId && c.StartTime >= from && c.EndTime <= to);
+            .AnyAsync(c => c.CoachId == coachId 
+                && c.StartTime >= from 
+                && c.EndTime <= to);
     }
 }

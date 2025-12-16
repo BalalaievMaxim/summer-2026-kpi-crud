@@ -26,99 +26,57 @@ public class CoachController : ControllerBase
         _unitOfWork = unitOfWork;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Coach>>> GetAll()
-    {
-        var coaches = await _coachRepository.GetAllAsync();
-        return Ok(coaches);
-    }
-
     [HttpGet("{id}")]
     public async Task<ActionResult<Coach>> GetById(int id)
     {
         var coach = await _coachRepository.GetByIdAsync(id);
         if (coach == null)
-            return NotFound($"Coach with ID {id} not found.");
-        
+            return NotFound();
         return Ok(coach);
     }
 
-    [HttpPost]
-    public async Task<ActionResult<Coach>> Create([FromBody] CreateCoachRequest request)
+    [HttpGet("specialization/{specialization}")]
+    public async Task<ActionResult<List<Coach>>> GetBySpecialization(string specialization)
     {
-        var coach = new Coach
-        {
-            Name = request.Name,
-            Specialization = request.Specialization,
-            Email = request.Email,
-            Password = request.Password
-        };
-
-        var created = await _coachRepository.CreateAsync(coach);
-        return CreatedAtAction(nameof(GetById), new { id = created.CoachId }, created);
-    }
-
-    [HttpPut("{id}")]
-    public async Task<ActionResult<Coach>> Update(int id, [FromBody] UpdateCoachRequest request)
-    {
-        var coach = await _coachRepository.GetByIdAsync(id);
-        if (coach == null)
-            return NotFound($"Coach with ID {id} not found.");
-
-        coach.Name = request.Name;
-        coach.Specialization = request.Specialization;
-        coach.Email = request.Email;
-
-        var updated = await _coachRepository.UpdateAsync(coach);
-        return Ok(updated);
+        var coaches = await _coachRepository.GetBySpecializationAsync(specialization);
+        return Ok(coaches);
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {
-        var coach = await _coachRepository.GetByIdAsync(id);
-        if (coach == null)
-            return NotFound($"Coach with ID {id} not found.");
-
-        // CASCADE DELETE: Видалити всі майбутні класи тренера
-        var futureClasses = await _classRepository.GetUpcomingClassesByCoachAsync(id);
-        
-        foreach (var classEntity in futureClasses)
+        try
         {
-            // Перевірка чи є записані клієнти
-            if (classEntity.Enrollments.Count > 0)
-            {
-                return BadRequest(
-                    $"Cannot delete coach. Class '{classEntity.ClassType.Name}' on {classEntity.StartTime:yyyy-MM-dd HH:mm} has {classEntity.Enrollments.Count} enrolled client(s). Please cancel enrollments first.");
-            }
+            var coach = await _coachRepository.GetByIdAsync(id);
+            if (coach == null)
+                return NotFound();
+
+            var futureClasses = (await _classRepository.GetUpcomingClassesByCoachAsync(id)).ToList();
             
-            await _classRepository.DeleteAsync(classEntity.ClassId);
+            foreach (var classEntity in futureClasses)
+            {
+                var fullClass = await _classRepository.GetByIdAsync(classEntity.ClassId);
+                
+                if (fullClass != null && fullClass.Enrollments.Any())
+                {
+                    return BadRequest(
+                        $"Cannot delete coach. Class '{fullClass.ClassType.Name}' on {fullClass.StartTime:yyyy-MM-dd HH:mm} has {fullClass.Enrollments.Count} enrolled client(s). Please cancel enrollments first.");
+                }
+            }
+
+            foreach (var classEntity in futureClasses)
+            {
+                await _classRepository.DeleteAsync(classEntity.ClassId);
+            }
+
+            await _coachRepository.DeleteAsync(id);
+            await _unitOfWork.SaveChangesAsync();
+            
+            return NoContent();
         }
-
-        // Видалити тренера
-        await _coachRepository.DeleteAsync(id);
-        await _unitOfWork.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    [HttpGet("{id}/classes")]
-    public async Task<ActionResult<IEnumerable<Class>>> GetCoachClasses(int id)
-    {
-        var coach = await _coachRepository.GetByIdAsync(id);
-        if (coach == null)
-            return NotFound($"Coach with ID {id} not found.");
-
-        return Ok(coach.Classes);
-    }
-
-    [HttpGet("specialization/{specialization}")]
-    public async Task<ActionResult<IEnumerable<Coach>>> GetBySpecialization(string specialization)
-    {
-        var coaches = await _coachRepository.GetBySpecializationAsync(specialization);
-        return Ok(coaches);
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
 }
-
-public record CreateCoachRequest(string Name, string Specialization, string Email, string Password);
-public record UpdateCoachRequest(string Name, string Specialization, string Email);
