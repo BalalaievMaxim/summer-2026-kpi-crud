@@ -1,5 +1,6 @@
 using GymManagement.Core.Entities;
 using System.Threading.Tasks;
+using GymManagement.Core.DTOs;
 
 namespace GymManagement.Core.Interfaces;
 
@@ -17,4 +18,5 @@ public interface IClassRepository
     Task<bool> HasTimeConflictForCoachAsync(int coachId, DateTime startTime, DateTime endTime, int? excludeClassId = null);
     Task<IEnumerable<Class>> GetUpcomingClassesByCoachAsync(int coachId);
     Task<IEnumerable<Class>> GetClassesByCoachAsync(int coachId, DateTime startDate, DateTime endDate);
+    Task<List<CoachEfficiencyDto>> GetCoachEfficiencyAnalyticsAsync(DateTime startDate, DateTime endDate);
 }
