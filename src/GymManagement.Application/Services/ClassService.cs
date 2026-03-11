@@ -2,6 +2,7 @@
 using GymManagement.Core.Exceptions;
 using GymManagement.Core.Interfaces;
 using GymManagement.Core.DTOs;
+using GymManagement.Core.Interfaces.Services;
 
 namespace GymManagement.Application.Services;
 

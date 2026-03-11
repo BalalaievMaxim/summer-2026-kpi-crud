@@ -1,10 +1,13 @@
-﻿using GymManagement.Infrastructure.Data; // Перевір цей namespace!
+﻿using System.Data.Common;
+using GymManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost; // Важливо для .NET 8/9
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
+using Respawn;
 using Testcontainers.PostgreSql;
 using Xunit;
 
@@ -16,6 +19,9 @@ public class GymApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         .WithImage("postgres:15-alpine")
         .Build();
 
+    private DbConnection _dbConnection = default!;
+    private Respawner _respawner = default!;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureTestServices(services =>
@@ -24,7 +30,8 @@ public class GymApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             services.AddDbContext<GymManagementContext>(options =>
             {
-                options.UseNpgsql(_dbContainer.GetConnectionString()).ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+                options.UseNpgsql(_dbContainer.GetConnectionString())
+                       .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             });
         });
     }
@@ -32,13 +39,32 @@ public class GymApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _dbContainer.StartAsync();
+
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<GymManagementContext>();
         await context.Database.MigrateAsync();
+
+        _dbConnection = new NpgsqlConnection(_dbContainer.GetConnectionString());
+        await _dbConnection.OpenAsync();
+
+        _respawner = await Respawner.CreateAsync(_dbConnection, new RespawnerOptions
+        {
+            DbAdapter = DbAdapter.Postgres,
+            SchemasToInclude = new[] { "public" }
+        });
+    }
+
+    public async Task ResetDatabaseAsync()
+    {
+        await _respawner.ResetAsync(_dbConnection);
     }
 
     public new async Task DisposeAsync()
     {
+        if (_dbConnection != null)
+        {
+            await _dbConnection.DisposeAsync();
+        }
         await _dbContainer.StopAsync();
     }
 }

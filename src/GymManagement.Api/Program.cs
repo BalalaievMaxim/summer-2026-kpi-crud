@@ -2,6 +2,7 @@ using System;
 using System.Text.Json.Serialization;
 using GymManagement.Core.Interfaces;
 using GymManagement.Application.Services;
+using GymManagement.Core.Interfaces.Services;
 using GymManagement.Infrastructure.Data;
 using GymManagement.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
@@ -20,7 +21,6 @@ builder.Services.AddDbContext<GymManagementContext>(options =>
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// Реєстрація репозиторіїв
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
 builder.Services.AddScoped<IMembershipPlanRepository, MembershipPlanRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
@@ -30,7 +30,6 @@ builder.Services.AddScoped<IClassTypeRepository, ClassTypeRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 
-// Реєстрація сервісів
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
