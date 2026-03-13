@@ -1,17 +1,7 @@
 const Auth = {
-
-    getUser() {
-        try { return JSON.parse(localStorage.getItem('gym_user')); }
-        catch { return null; }
-    },
-
-    getToken() {
-        return localStorage.getItem('gym_token');
-    },
-
-    isLoggedIn() {
-        return !!this.getToken();
-    },
+    getUser() { try { return JSON.parse(localStorage.getItem('gym_user')); } catch { return null; } },
+    getToken() { return localStorage.getItem('gym_token'); },
+    isLoggedIn() { return !!this.getToken(); },
 
     setSession(token, user) {
         localStorage.setItem('gym_token', token);
@@ -27,19 +17,30 @@ const Auth = {
     },
 };
 
-async function loginUser(email, password) {
-    const res = await request('/api/v1/clients/search?email=' + encodeURIComponent(email));
 
-    if (res && res.length > 0) {
-        const user = res[0];
-        Auth.setSession(`demo-token-${user.clientId}`, {
-            id: user.clientId,
-            name: user.name,
-            email: user.email,
-        });
-        return user;
-    }
-    throw new Error('Користувача не знайдено');
+async function loginUser(email, password) {
+    const res = await request('/api/v1/clients/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    });
+    if (!res) throw new Error('Помилка сервера');
+    Auth.setSession(`token-${res.clientId}`, {
+        id: res.clientId, name: res.name, email: res.email, phone: res.phone,
+    });
+    return res;
+}
+
+
+async function registerUser(name, email, password, phone) {
+    const res = await request('/api/v1/clients/register', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password, phone }),
+    });
+    if (!res) throw new Error('Помилка сервера');
+    Auth.setSession(`token-${res.clientId}`, {
+        id: res.clientId, name: res.name, email: res.email, phone: res.phone,
+    });
+    return res;
 }
 
 function updateNavAuth() {

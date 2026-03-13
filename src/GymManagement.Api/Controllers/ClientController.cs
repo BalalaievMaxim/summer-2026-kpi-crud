@@ -102,4 +102,39 @@ public class ClientController(IClientService clientService) : ControllerBase
         var analytics = await clientService.GetClientActivityAnalyticsAsync();
         return Ok(analytics);
     }
+
+    [HttpPost("register")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Register([FromBody] CreateClientDto dto)
+    {
+        try
+        {
+            var client = await clientService.RegisterClientAsync(dto);
+            return CreatedAtAction(nameof(Register), new { id = client.ClientId }, new
+            {
+                client.ClientId,
+                client.Name,
+                client.Email,
+                client.Phone
+            });
+        }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+    }
+
+    [HttpPost("login")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    {
+        try
+        {
+            var client = await clientService.LoginClientAsync(dto.Email, dto.Password);
+            return Ok(new { client.ClientId, client.Name, client.Email, client.Phone });
+        }
+        catch (InvalidOperationException ex) { return Unauthorized(new { error = ex.Message }); }
+        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+    }
 }

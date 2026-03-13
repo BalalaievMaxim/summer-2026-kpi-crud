@@ -1,5 +1,6 @@
 /* api.js — всі запити до бекенду
    Base URL: http://localhost:5000 */
+
 const API_BASE = 'http://localhost:5000';
 
 async function request(endpoint, options = {}) {
@@ -42,9 +43,9 @@ const CoachAPI = {
 };
 
 const PlanAPI = {
-    getAll: () => request('/api/MembershipPlan'),
-    create: (data) => request('/api/MembershipPlan', { method: 'POST', body: JSON.stringify(data) }),
-    delete: (id) => request(`/api/MembershipPlan/${id}`, { method: 'DELETE' }),
+    getAll: () => request('/api/v1/membership-plans'),
+    create: (data) => request('/api/v1/membership-plans', { method: 'POST', body: JSON.stringify(data) }),
+    delete: (id) => request(`/api/v1/membership-plans/${id}`, { method: 'DELETE' }),
 };
 
 const ClassAPI = {

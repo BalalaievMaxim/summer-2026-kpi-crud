@@ -1,9 +1,3 @@
-/* ═══════════════════════════════════════════════════
-   main.js — IronPulse Gym v3
-   Navigation + Scroll Animations + Counters + Pages
-═══════════════════════════════════════════════════ */
-
-// ══ NAVIGATION ══════════════════════════════════════
 function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-links a, .nav-mobile a').forEach(a => a.classList.remove('active'));
@@ -34,7 +28,7 @@ function closeMobileMenu() {
     document.getElementById('nav-burger')?.classList.remove('open');
 }
 
-// ══ TOAST ═════════════════════════════════════════════
+
 function showToast(msg, type = 'info') {
     const c = document.getElementById('toast-container');
     if (!c) return;
@@ -54,7 +48,7 @@ function showEmpty(id, msg = 'Нічого не знайдено') {
     if (el) el.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>${msg}</p></div>`;
 }
 
-// ══ SCROLL REVEAL ══════════════════════════════════════
+
 function initReveal() {
     const page = document.querySelector('.page.active');
     if (!page) return;
@@ -83,7 +77,7 @@ function initReveal() {
     });
 }
 
-// ══ ANIMATED COUNTERS ══════════════════════════════════
+
 function animateCounters() {
     document.querySelectorAll('.stat-card[data-val]').forEach((card, i) => {
         const target = parseInt(card.dataset.val);
@@ -108,7 +102,7 @@ function animateCounters() {
     });
 }
 
-// ══ NAV SCROLL EFFECT ══════════════════════════════════
+
 function initNavScroll() {
     const nav = document.getElementById('nav');
     if (!nav) return;
@@ -117,7 +111,7 @@ function initNavScroll() {
     handler();
 }
 
-// ══ HERO PARTICLES ════════════════════════════════════
+
 function initParticles() {
     const container = document.querySelector('.hero-particles');
     if (!container) return;
@@ -136,7 +130,7 @@ function initParticles() {
     }
 }
 
-// ══ HOME PAGE INIT ════════════════════════════════════
+
 function initHomePage() {
     initParticles();
     loadTariffsHome();
@@ -151,7 +145,7 @@ function initHomePage() {
     }
 }
 
-// ══ TRAINERS ══════════════════════════════════════════
+
 const TRAINER_PHOTOS = [
     'images/trainers/bro1.jpg', 'images/trainers/bro2.jpg',
     'images/trainers/women1.jpg', 'images/trainers/women2.jpg',
@@ -210,7 +204,7 @@ function renderTrainers(trainers) {
     setTimeout(() => initReveal(), 60);
 }
 
-// ══ TARIFFS ══════════════════════════════════════════
+
 async function loadTariffs() {
     showLoading('tariffs-grid');
     try {
@@ -267,7 +261,7 @@ function onSelectTariff(id, name) {
     showToast(`Ви обрали план: ${name}`, 'success');
 }
 
-// ══ SCHEDULE ═════════════════════════════════════════
+
 function getTodayDate() { return new Date().toISOString().split('T')[0]; }
 function formatTime(ts) {
     if (!ts) return '--:--';
@@ -304,7 +298,7 @@ function renderSchedule(classes) {
     </div>`).join('');
 }
 
-// ══ INVOICES ═════════════════════════════════════════
+
 async function loadInvoices() {
     const user = Auth.getUser();
     if (!user) {
@@ -378,7 +372,7 @@ async function payInvoice(id) {
     } catch { showToast('Помилка оплати', 'error'); }
 }
 
-// ══ LOGIN ═════════════════════════════════════════════
+
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value.trim();
@@ -401,7 +395,7 @@ async function handleLogin(e) {
 }
 function showErr(el, msg) { if (el) { el.textContent = msg; el.classList.add('show'); } }
 
-// ══ DOMContentLoaded ═══════════════════════════════════
+
 document.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('schedule-date');
     if (dateInput) dateInput.value = getTodayDate();
@@ -411,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showPage('home');
 
     document.getElementById('login-form')?.addEventListener('submit', handleLogin);
+    document.getElementById('register-form')?.addEventListener('submit', handleRegister);
     document.getElementById('schedule-date')?.addEventListener('change', e => loadSchedule(e.target.value));
 
     // Закрити mobile menu при кліку поза ним
@@ -422,3 +417,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+
+function switchAuthTab(tab) {
+    document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    // скидаємо помилки
+    ['login-error', 'register-error'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.classList.remove('show'); }
+    });
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const errorEl = document.getElementById('register-error');
+    const btn = document.getElementById('register-submit');
+
+    if (!name || !email || !phone || !password) { showErr(errorEl, 'Заповніть всі поля'); return; }
+    if (password.length < 4) { showErr(errorEl, 'Пароль мінімум 4 символи'); return; }
+
+    btn.disabled = true; btn.textContent = 'Створюю акаунт...';
+    errorEl?.classList.remove('show');
+    try {
+        const user = await registerUser(name, email, password, phone);
+        updateNavAuth();
+        showToast(`Акаунт створено! Ласкаво просимо, ${user.name?.split(' ')[0]}! 💪`, 'success');
+        showPage('home');
+    } catch (err) {
+        showErr(errorEl, err.message || 'Помилка реєстрації');
+    } finally {
+        btn.disabled = false; btn.textContent = 'Створити акаунт';
+    }
+}

@@ -8,6 +8,7 @@ public class Client
 {
     [Key]
     [Column("client_id")]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int ClientId { get; set; }
 
     [Column("name")]
