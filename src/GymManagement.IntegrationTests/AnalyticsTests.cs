@@ -2,7 +2,6 @@
 using FluentAssertions;
 using GymManagement.Core.DTOs;
 using GymManagement.Core.Entities;
-using Xunit;
 
 namespace GymManagement.IntegrationTests;
 

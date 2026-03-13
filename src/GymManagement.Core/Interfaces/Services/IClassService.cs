@@ -1,7 +1,7 @@
 ﻿using GymManagement.Core.Entities;
 using GymManagement.Core.DTOs;
 
-namespace GymManagement.Core.Interfaces;
+namespace GymManagement.Core.Interfaces.Services;
 
 public interface IClassService
 {
