@@ -19,7 +19,7 @@ public class ClientManagementTests(GymApiFactory factory) : BaseIntegrationTest(
 
         var updateDto = new UpdateClientDto
         {
-            Email = "second@test.com", // !!
+            Email = "second@test.com",
             Phone = "333"
         };
 

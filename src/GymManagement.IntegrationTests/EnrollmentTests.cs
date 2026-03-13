@@ -68,7 +68,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
             CoachId = coach.CoachId,
             StartTime = DateTime.UtcNow.AddDays(1),
             EndTime = DateTime.UtcNow.AddDays(1).AddHours(1),
-            Capacity = 1 // !
+            Capacity = 1 
         };
         Context.Classes.Add(gymClass);
         await Context.SaveChangesAsync();
@@ -122,7 +122,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         {
             ClientId = client.ClientId,
             PlanId = plan.PlanId,
-            IsActive = false, // !!
+            IsActive = false,
             StartDate = today,
             EndDate = today.AddMonths(1)
         });
@@ -167,7 +167,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
             PlanId = plan.PlanId,
             IsActive = true,
             StartDate = today.AddMonths(-2),
-            EndDate = today.AddDays(-1) // !!
+            EndDate = today.AddDays(-1)
         });
         await Context.SaveChangesAsync();
 
