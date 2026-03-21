@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IronPulse — Forge Your Body</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <nav class="nav" id="nav">
+        <div class="nav-logo" onclick="showPage('home')">
+            <svg class="logo-svg" viewBox="0 0 130 42" fill="none">
+                <line x1="0" y1="21" x2="22" y2="21" stroke="#cc0000" stroke-width="2.5" stroke-linecap="round" />
+                <polyline points="22,21 30,21 35,4 40,38 46,8 52,34 57,21 78,21" stroke="#cc0000" stroke-width="2.5" fill="none" stroke-linejoin="round" stroke-linecap="round" />
+                <line x1="78" y1="21" x2="130" y2="21" stroke="#cc0000" stroke-width="2.5" stroke-linecap="round" />
+            </svg>
+            <div class="logo-text">IRON<span>PULSE</span></div>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" data-page="home" onclick="showPage('home');return false">Головна</a></li>
+            <li><a href="#" data-page="trainers" onclick="showPage('trainers');return false">Тренери</a></li>
+            <li><a href="#" data-page="tariffs" onclick="showPage('tariffs');return false">Тарифи</a></li>
+            <li><a href="#" data-page="schedule" onclick="showPage('schedule');return false">Розклад</a></li>
+            <li><a href="#" data-page="invoices" onclick="showPage('invoices');return false">Рахунки</a></li>
+        </ul>
+        <div class="nav-auth" id="nav-auth">
+            <button class="btn-accent" onclick="showPage('login')">Увійти</button>
+        </div>
+        <button class="nav-burger" id="nav-burger" onclick="toggleMobileMenu()">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <div class="nav-mobile" id="nav-mobile">
+        <a href="#" onclick="showPage('home');return false">Головна</a>
+        <a href="#" onclick="showPage('trainers');return false">Тренери</a>
+        <a href="#" onclick="showPage('tariffs');return false">Тарифи</a>
+        <a href="#" onclick="showPage('schedule');return false">Розклад</a>
+        <a href="#" onclick="showPage('invoices');return false">Рахунки</a>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+
+    <div class="page active" id="page-home">
+
+        <section class="hero" id="hero">
+            <div class="hero-bg">
+                <img src="images/hero-bg.jpg" alt="" class="hero-bg-img">
+                <!--><div class="hero-overlay"></div>
+                    <div class="hero-noise"></div> -->
+                </div>
+
+                <div class="hero-content">
+                    <div class="hero-tag reveal-tag">
+                        <span class="tag-dot"></span>
+                        Відкрито щодня · 6:00 — 23:00
+                    </div>
+
+                    <h1 class="hero-title">
+                        <span class="title-line" data-delay="0">FORGE</span>
+                        <span class="title-line red" data-delay="1">YOUR</span>
+                        <span class="title-line" data-delay="2">BODY</span>
+                    </h1>
+
+                    <div class="hero-quote">
+                        <span class="quote-mark open">"</span>
+                        <p>Кожне повторення — це крок до кращої версії себе.</p>
+                        <span class="quote-mark close">"</span>
+                    </div>
+
+                    <div class="hero-actions reveal-actions">
+                        <button class="btn-primary" onclick="showPage('tariffs')">
+                            <span>Обрати план</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                        </button>
+                        <button class="btn-outline" onclick="showPage('schedule')">Розклад занять</button>
+                    </div>
+                </div>
+
+                <div class="hero-scroll-hint">
+                    <span>Scroll</span>
+                    <div class="scroll-line"></div>
+                </div>
+            </section>
+
+            <section class="about-split" id="about">
+                <div class="about-left reveal-left">
+                    <div class="section-eyebrow">Про нас</div>
+                    <h2>БІЛЬШЕ НІЖ<br><span class="red">ПРОСТО ЗАЛ</span></h2>
+                    <p>IronPulse — це простір, де народжуються чемпіони. Ми поєднуємо преміум обладнання, наукові методики тренувань та команду сертифікованих тренерів, щоб ти досягав реальних результатів.</p>
+                    <p>Від новачка до атлета — ми пройдемо цей шлях разом. Персональні програми, групові заняття та постійна підтримка на кожному кроці.</p>
+                    <button class="btn-primary" onclick="showPage('trainers')" style="margin-top:2rem">
+                        <span>Наші тренери</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                    </button>
+                </div>
+
+                <div class="about-right reveal-right">
+                    <div class="stats-grid">
+                        <div class="stat-card" data-val="500" data-suffix="+">
+                            <div class="stat-num">0+</div>
+                            <div class="stat-label">Активних клієнтів</div>
+                            <div class="stat-bg-text">500</div>
+                        </div>
+                        <div class="stat-card accent" data-val="20" data-suffix="+">
+                            <div class="stat-num">0+</div>
+                            <div class="stat-label">Тренерів</div>
+                            <div class="stat-bg-text">20</div>
+                        </div>
+                        <div class="stat-card" data-val="50" data-suffix="+">
+                            <div class="stat-num">0+</div>
+                            <div class="stat-label">Занять/тиждень</div>
+                            <div class="stat-bg-text">50</div>
+                        </div>
+                        <div class="stat-card accent" data-val="5" data-suffix="★">
+                            <div class="stat-num">0★</div>
+                            <div class="stat-label">Рейтинг клубу</div>
+                            <div class="stat-bg-text">5</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="features-banner">
+                <div class="features-marquee">
+                    <div class="marquee-track">
+                        <span>Преміум обладнання</span><span class="dot">✦</span>
+                        <span>Персональні тренування</span><span class="dot">✦</span>
+                        <span>Групові заняття</span><span class="dot">✦</span>
+                        <span>Сауна та SPA</span><span class="dot">✦</span>
+                        <span>Відстеження прогресу</span><span class="dot">✦</span>
+                        <span>Гнучкий графік</span><span class="dot">✦</span>
+                        <span>Преміум обладнання</span><span class="dot">✦</span>
+                        <span>Персональні тренування</span><span class="dot">✦</span>
+                        <span>Групові заняття</span><span class="dot">✦</span>
+                        <span>Сауна та SPA</span><span class="dot">✦</span>
+                        <span>Відстеження прогресу</span><span class="dot">✦</span>
+                        <span>Гнучкий графік</span><span class="dot">✦</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="motivation" id="motivation">
+                <div class="motivation-header reveal-up">
+                    <div class="section-eyebrow">Мотивація</div>
+                    <h2>ПОЧИНАЙ<br><span class="red">СЬОГОДНІ</span></h2>
+                </div>
+
+                <div class="motivation-body">
+                    <div class="motivation-text reveal-up" style="--d:.1s">
+                        <div class="motive-card">
+                            <div class="motive-icon">🔥</div>
+                            <h3>Зміни починаються з рішення</h3>
+                            <p>Перший крок — найважчий. Але саме він відокремлює тебе від тієї людини, якою ти хочеш стати.</p>
+                        </div>
+                        <div class="motive-card">
+                            <div class="motive-icon">⚡</div>
+                            <h3>Кожне тренування має значення</h3>
+                            <p>Консистентність б'є інтенсивність. 3 рази на тиждень протягом року — і ти не впізнаєш себе.</p>
+                        </div>
+                        <div class="motive-card">
+                            <div class="motive-icon">🎯</div>
+                            <h3>Ціль + план = результат</h3>
+                            <p>Наші тренери розроблять індивідуальну програму під твої цілі, рівень та графік.</p>
+                        </div>
+                    </div>
+
+                    <div class="mini-gallery reveal-up" style="--d:.2s">
+                        <div class="gallery-grid">
+                            <div class="gallery-item g-tall">
+                                <img src="images/people/1.jpg" alt="Gym">
+                                <div class="gallery-overlay"><span>СИЛА</span></div>
+                            </div>
+                            <div class="gallery-item">
+                                <img src="images/people/4.jpg" alt="Trainer" onerror="this.parentElement.style.background='#161616'">
+                                <div class="gallery-overlay"><span>МАЙСТРИ</span></div>
+                            </div>
+                            <div class="gallery-item">
+                                <img src="images/people/2.jpg" alt="Trainer" onerror="this.parentElement.style.background='#161616'">
+                                <div class="gallery-overlay"><span>РЕЗУЛЬТАТ</span></div>
+                            </div>
+                            <div class="gallery-item g-wide">
+                                <img src="images/people/3.jpg" alt="Gym" onerror="this.parentElement.style.background='#1a1a1a'">
+                                <div class="gallery-overlay"><span>КОМАНДА</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section tariffs-section" id="tariffs-home">
+                <div class="section-header reveal-up">
+                    <div class="section-eyebrow">Ціни</div>
+                    <h2 class="section-title">ТАРИФНІ ПЛАНИ</h2>
+                </div>
+                <div class="tariffs-grid" id="tariffs-grid-home">
+                    <div class="loading"><div class="spinner"></div><span>Завантаження...</span></div>
+                </div>
+                <div class="tariffs-cta reveal-up">
+                    <button class="btn-outline" onclick="showPage('tariffs')">Всі тарифи →</button>
+                </div>
+            </section>
+
+            <section class="contacts-section" id="contacts">
+                <div class="contacts-inner">
+                    <div class="contacts-info reveal-left">
+                        <div class="section-eyebrow">Зв'язок</div>
+                        <h2>ЗНАЙДИ<br><span class="red">НАС</span></h2>
+
+                        <div class="contact-list">
+                            <div class="contact-row">
+                                <div class="c-icon">📍</div>
+                                <div>
+                                    <div class="c-label">Адреса</div>
+                                    <div class="c-val">вул. Спортивна 12, Київ, 01001</div>
+                                </div>
+                            </div>
+                            <div class="contact-row">
+                                <div class="c-icon">📞</div>
+                                <div>
+                                    <div class="c-label">Телефон</div>
+                                    <div class="c-val"><a href="tel:+380441234567">+38 (044) 123-45-67</a></div>
+                                </div>
+                            </div>
+                            <div class="contact-row">
+                                <div class="c-icon">✉️</div>
+                                <div>
+                                    <div class="c-label">Email</div>
+                                    <div class="c-val"><a href="mailto:info@ironpulse.com.ua">info@ironpulse.com.ua</a></div>
+                                </div>
+                            </div>
+                            <div class="contact-row">
+                                <div class="c-icon">🕐</div>
+                                <div>
+                                    <div class="c-label">Графік</div>
+                                    <div class="c-val">Пн–Пт: 06:00–23:00<br>Сб–Нд: 08:00–22:00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="social-row">
+                            <a href="#" class="social-btn">Instagram</a>
+                            <a href="#" class="social-btn">Telegram</a>
+                            <a href="#" class="social-btn">YouTube</a>
+                        </div>
+                    </div>
+
+                    <div class="contacts-map reveal-right">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2541.0!2d30.5234!3d50.4501!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40d4cf4e518d48a7%3A0x1!2z0LLRg9C7LiDQodC_0L7RgNGC0LjQstC90LAg0LHRg9C70LLQsNGA0Y8sIDEyLCDQmtC40ZfQsg!5e0!3m2!1suk!2sua!4v1710000000000"
+                                width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                        <div class="map-pin-label">📍 вул. Спортивна 12, Київ</div>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="footer">
+                <div class="footer-logo">IRON<span>PULSE</span></div>
+                <div class="footer-copy">© 2026 IronPulse Gym. Всі права захищені.</div>
+                <div class="footer-links">
+                    <a href="#">Instagram</a>
+                    <a href="#">Telegram</a>
+                </div>
+            </footer>
+        </div>
+
+        <div class="page" id="page-trainers">
+            <section class="section page-hero-sm">
+                <div class="page-hero-content reveal-up">
+                    <div class="section-eyebrow">Команда</div>
+                    <h2 class="section-title">НАШІ ТРЕНЕРИ</h2>
+                </div>
+                <div class="trainers-grid" id="trainers-grid">
+                    <div class="loading"><div class="spinner"></div><span>Завантаження...</span></div>
+                </div>
+            </section>
+            <footer class="footer"><div class="footer-logo">IRON<span>PULSE</span></div><div class="footer-copy">© 2026 IronPulse Gym</div></footer>
+        </div>
+
+        <div class="page" id="page-tariffs">
+            <section class="section page-hero-sm">
+                <div class="page-hero-content reveal-up">
+                    <div class="section-eyebrow">Ціни</div>
+                    <h2 class="section-title">ТАРИФНІ ПЛАНИ</h2>
+                </div>
+                <div class="tariffs-grid" id="tariffs-grid">
+                    <div class="loading"><div class="spinner"></div><span>Завантаження...</span></div>
+                </div>
+            </section>
+            <footer class="footer"><div class="footer-logo">IRON<span>PULSE</span></div><div class="footer-copy">© 2026 IronPulse Gym</div></footer>
+        </div>
+
+        <div class="page" id="page-schedule">
+            <section class="section page-hero-sm">
+                <div class="page-hero-content reveal-up">
+                    <div class="section-eyebrow">Заняття</div>
+                    <h2 class="section-title">РОЗКЛАД</h2>
+                </div>
+                <div class="schedule-controls">
+                    <input type="date" id="schedule-date" class="input-date">
+                    <button class="btn-accent" onclick="loadSchedule()">Показати</button>
+                    <button class="btn-ghost" onclick="document.getElementById('schedule-date').value=getTodayDate();loadSchedule()">Сьогодні</button>
+                </div>
+                <div class="schedule-list" id="schedule-list">
+                    <div class="loading"><div class="spinner"></div><span>Завантаження...</span></div>
+                </div>
+            </section>
+            <footer class="footer"><div class="footer-logo">IRON<span>PULSE</span></div><div class="footer-copy">© 2026 IronPulse Gym</div></footer>
+        </div>
+
+
+        <div class="page" id="page-invoices">
+            <section class="section page-hero-sm">
+                <div class="page-hero-content reveal-up">
+                    <div class="section-eyebrow">Фінанси</div>
+                    <h2 class="section-title">МОЇ РАХУНКИ</h2>
+                </div>
+                <div id="invoices-content">
+                    <div class="loading"><div class="spinner"></div><span>Завантаження...</span></div>
+                </div>
+            </section>
+            <footer class="footer"><div class="footer-logo">IRON<span>PULSE</span></div><div class="footer-copy">© 2026 IronPulse Gym</div></footer>
+        </div>
+
+
+        <div class="page" id="page-login">
+            <div class="auth-page">
+                <div class="auth-left">
+                    <div class="auth-brand">IRON<span>PULSE</span></div>
+                    <p class="auth-tagline">Увійди в особистий кабінет щоб переглядати свої рахунки та управляти абонементом.</p>
+                </div>
+                <div class="auth-right">
+                    <div class="auth-box reveal-up">
+                        <h2 class="auth-title">ВХІД</h2>
+                        <p class="auth-sub">Введи свої дані для входу</p>
+                        <form id="login-form">
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" id="login-email" class="form-input" placeholder="your@email.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Пароль</label>
+                                <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+                            </div>
+                            <div class="form-error" id="login-error"></div>
+                            <button type="submit" class="form-submit" id="login-submit">Увійти</button>
+                        </form>
+                        <div class="form-switch">
+                            <a href="#" onclick="showPage('home');return false">← Повернутись на головну</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="js/api.js"></script>
+        <script src="js/autorisation.js"></script>
+        <script src="js/main.js"></script>
+    </body>
+    </html>
