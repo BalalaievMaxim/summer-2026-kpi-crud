@@ -10,4 +10,6 @@ public interface IClientService
     Task<Client> GetClientClassHistoryAsync(int clientId);
     Task<List<Client>> SearchClientsAsync(string searchTerm);
     Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync();
+    Task<Client> RegisterClientAsync(CreateClientDto dto);
+    Task<Client> LoginClientAsync(string email, string password);
 }
