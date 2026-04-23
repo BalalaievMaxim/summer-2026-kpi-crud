@@ -1,7 +1,7 @@
 /* api.js — всі запити до бекенду
    Base URL: http://localhost:5000 */
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = '';
 
 async function request(endpoint, options = {}) {
     const token = localStorage.getItem('gym_token');
