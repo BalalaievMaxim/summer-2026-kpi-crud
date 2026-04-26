@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\GymManagement.csproj" />
+    <ProjectReference Include="..\..\..\GymManagement.csproj" />
   </ItemGroup>
   
   <ItemGroup>
