@@ -3,10 +3,9 @@ WORKDIR /usr/share/nginx/html
 
 RUN rm -rf ./*
 
-COPY . .
+COPY public/ .
+COPY src/ ./src/
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-RUN rm nginx.conf
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
