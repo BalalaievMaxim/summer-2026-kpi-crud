@@ -1,9 +1,10 @@
 using System;
 using System.Threading.Tasks;
-using GymManagement.Repositories.Interfaces;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GymManagement.Controllers;
+namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/test-domain2")]

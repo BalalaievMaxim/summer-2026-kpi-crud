@@ -1,9 +1,10 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using GymManagement.DTOs;
-using GymManagement.Models;
-using GymManagement.Models.Enums;
+using GymManagement.Infrastructure.DTOs;
+using GymManagement.Application.DTOs;
+using GymManagement.Infrastructure.Persistence.Entities;
+using GymManagement.Infrastructure.Persistence.Entities.Enums;
 using Xunit;
 
 namespace GymManagement.Tests.Integration;
