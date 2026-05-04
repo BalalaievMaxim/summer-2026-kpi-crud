@@ -1,16 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using GymManagement.Services;
-using GymManagement.DTOs;
-using GymManagement.Models;
-using GymManagement.Configuration.Exceptions;
-using GymManagement.Repositories.Interfaces;
+using GymManagement.Application.Services;
+using GymManagement.Infrastructure.DTOs;
+using GymManagement.Application.DTOs;
+using GymManagement.Infrastructure.Persistence.Entities;
+using GymManagement.Application.Exceptions;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GymManagement.Controllers;
+namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/invoices")]

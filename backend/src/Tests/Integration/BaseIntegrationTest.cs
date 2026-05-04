@@ -1,4 +1,4 @@
-﻿using GymManagement.Configuration;
+using GymManagement.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
