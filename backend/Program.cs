@@ -1,16 +1,11 @@
-using System;
 using System.Text.Json.Serialization;
-using GymManagement.Repositories.Interfaces;
-using GymManagement.Services;
-using GymManagement.Services.Interfaces;
-using GymManagement.Configuration;
-using GymManagement.Repositories;
-using Microsoft.AspNetCore.Builder;
+using GymManagement.Application.Services;
+using GymManagement.Application.Services.Interfaces;
+using GymManagement.Infrastructure;
+using GymManagement.Infrastructure.Persistence;
+using GymManagement.Infrastructure.Persistence.Repositories;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -52,7 +47,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles; 
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
 var app = builder.Build();
@@ -63,7 +58,6 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<GymManagementContext>();
-        
         await DbInitializer.InitializeAsync(context);
     }
     catch (Exception ex)

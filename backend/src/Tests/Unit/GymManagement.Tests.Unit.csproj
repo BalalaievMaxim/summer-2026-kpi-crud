@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\GymManagement.csproj" />
+    <ProjectReference Include="..\..\Domain\GymManagement.Domain.csproj" />
   </ItemGroup>
 
 </Project>
