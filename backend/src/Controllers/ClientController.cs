@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using GymManagement.Repositories.Interfaces;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using GymManagement.Models;
-using GymManagement.DTOs;
+using GymManagement.Infrastructure.Persistence.Entities;
+using GymManagement.Infrastructure.DTOs;
+using GymManagement.Application.DTOs;
 using Microsoft.AspNetCore.Http;
 
-namespace GymManagement.Controllers;
+namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/clients")]
