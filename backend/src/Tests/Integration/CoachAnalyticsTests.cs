@@ -1,8 +1,9 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using GymManagement.Models;
-using GymManagement.DTOs;
+using GymManagement.Infrastructure.Persistence.Entities;
+using GymManagement.Infrastructure.DTOs;
+using GymManagement.Application.DTOs;
 using Xunit;
 
 namespace GymManagement.Tests.Integration;

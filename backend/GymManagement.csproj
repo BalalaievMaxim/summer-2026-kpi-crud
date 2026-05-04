@@ -9,24 +9,35 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
   </ItemGroup>
 
-  <!-- Exclude test projects from compilation -->
+  <!-- Exclude test projects and the new sub-layer projects from Presentation compilation -->
   <ItemGroup>
     <Compile Remove="src\Tests\**" />
     <Content Remove="src\Tests\**" />
     <EmbeddedResource Remove="src\Tests\**" />
     <None Remove="src\Tests\**" />
+
+    <Compile Remove="src\Domain\**" />
+    <Content Remove="src\Domain\**" />
+    <EmbeddedResource Remove="src\Domain\**" />
+    <None Remove="src\Domain\**" />
+
+    <Compile Remove="src\Application\**" />
+    <Content Remove="src\Application\**" />
+    <EmbeddedResource Remove="src\Application\**" />
+    <None Remove="src\Application\**" />
+
+    <Compile Remove="src\Infrastructure\**" />
+    <Content Remove="src\Infrastructure\**" />
+    <EmbeddedResource Remove="src\Infrastructure\**" />
+    <None Remove="src\Infrastructure\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="src\Application\GymManagement.Application.csproj" />
+    <ProjectReference Include="src\Infrastructure\GymManagement.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

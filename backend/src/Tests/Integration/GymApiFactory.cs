@@ -1,5 +1,5 @@
-﻿using System.Data.Common;
-using GymManagement.Configuration;
+using System.Data.Common;
+using GymManagement.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;

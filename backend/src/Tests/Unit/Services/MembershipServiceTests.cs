@@ -1,8 +1,9 @@
-﻿using FluentAssertions;
-using GymManagement.Services;
-using GymManagement.Models;
-using GymManagement.Models.Enums;
-using GymManagement.Repositories.Interfaces;
+using FluentAssertions;
+using GymManagement.Application.Services;
+using GymManagement.Infrastructure.Persistence.Entities;
+using GymManagement.Infrastructure.Persistence.Entities.Enums;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Application.Services.Interfaces;
 using Moq;
 using Xunit;
 

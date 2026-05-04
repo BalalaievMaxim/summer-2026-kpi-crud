@@ -1,6 +1,6 @@
-﻿using System.Net;
+using System.Net;
 using FluentAssertions;
-using GymManagement.Models;
+using GymManagement.Infrastructure.Persistence.Entities;
 using Xunit;
 
 namespace GymManagement.Tests.Integration;
