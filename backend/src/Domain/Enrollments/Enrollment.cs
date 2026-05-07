@@ -37,9 +37,6 @@ public sealed class Enrollment : Entity<int>
         return new Enrollment(0, clientId, classId, DateTimeOffset.UtcNow, EnrollmentStatus.Active);
     }
 
-    /// <summary>
-    /// Cancel this enrollment. Can only cancel an active enrollment.
-    /// </summary>
     public void Cancel()
     {
         if (Status == EnrollmentStatus.Cancelled)
@@ -50,7 +47,6 @@ public sealed class Enrollment : Entity<int>
 
     public bool IsActive => Status == EnrollmentStatus.Active;
 
-    // Internal factory used by Class aggregate to reconstruct enrollments
     internal static Enrollment Reconstitute(int id, int clientId, int classId,
         DateTimeOffset registrationTime, EnrollmentStatus status)
     {

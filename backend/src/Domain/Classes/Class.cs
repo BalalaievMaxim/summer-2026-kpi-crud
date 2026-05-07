@@ -38,10 +38,6 @@ public sealed class Class : AggregateRoot<int>
         return new Class(id, classTypeId, coachId, schedule, capacity);
     }
 
-    /// <summary>
-    /// Enroll a client into this class.
-    /// Checks: class not in past, has capacity, no duplicate enrollment.
-    /// </summary>
     public Enrollment Enroll(int clientId)
     {
         if (Schedule.IsInPast())
@@ -58,9 +54,6 @@ public sealed class Class : AggregateRoot<int>
         return enrollment;
     }
 
-    /// <summary>
-    /// Cancel enrollment for a specific client.
-    /// </summary>
     public void CancelEnrollment(int clientId)
     {
         var enrollment = _enrollments.FirstOrDefault(e => e.ClientId == clientId);
@@ -70,16 +63,9 @@ public sealed class Class : AggregateRoot<int>
         _enrollments.Remove(enrollment);
     }
 
-    /// <summary>
-    /// Check if there is capacity for a given number of additional enrollments.
-    /// </summary>
     public bool HasCapacityFor(int count)
         => _enrollments.Count + count <= Capacity;
 
-    /// <summary>
-    /// Reschedule the class to a new time range.
-    /// The new range must not be in the past.
-    /// </summary>
     public void Reschedule(TimeRange newRange)
     {
         if (newRange.IsInPast())
@@ -88,9 +74,6 @@ public sealed class Class : AggregateRoot<int>
         Schedule = newRange;
     }
 
-    /// <summary>
-    /// Used by infrastructure layer to reconstitute the aggregate from persistence.
-    /// </summary>
     internal static Class Reconstitute(int id, int classTypeId, int coachId,
         TimeRange schedule, int capacity, IEnumerable<Enrollment> enrollments)
     {

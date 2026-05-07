@@ -44,7 +44,6 @@ public class ClassFactoryTests
             .ReturnsAsync(true);
     }
 
-    // --- Success ---
 
     [Fact]
     public async Task CreateAsync_ValidData_ReturnsClass()
@@ -62,7 +61,6 @@ public class ClassFactoryTests
         result.Capacity.Should().Be(20);
     }
 
-    // --- Simple invariants ---
 
     [Fact]
     public async Task CreateAsync_ZeroCapacity_ThrowsInvalidCapacityError()
@@ -91,7 +89,6 @@ public class ClassFactoryTests
         await act.Should().ThrowAsync<InvalidTimeRangeError>();
     }
 
-    // --- Complex invariants (via repos) ---
 
     [Fact]
     public async Task CreateAsync_CoachNotFound_ThrowsCoachNotFoundForClassError()
