@@ -1,10 +1,10 @@
+using GymManagement.Application.Exceptions;
+using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Clients;
+using GymManagement.Infrastructure.DTOs;
 using GymManagement.Infrastructure.Persistence.Entities;
 using GymManagement.Infrastructure.Persistence.Entities.Enums;
-using GymManagement.Application.Exceptions;
 using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Application.Services.Interfaces;
-using GymManagement.Infrastructure.DTOs;
-using GymManagement.Application.DTOs;
 
 namespace GymManagement.Application.Services;
 
@@ -24,14 +24,12 @@ public class InvoiceService(
         if (plan == null)
             throw new NotFoundException($"Membership Plan with ID {membershipPlanId} not found.");
 
-        var client = await clientRepository.GetClientByIdAsync(clientId);
-        if (client == null)
+        if (!await clientRepository.ExistsAsync(clientId))
             throw new NotFoundException($"Client with ID {clientId} not found.");
 
         var invoice = new Invoice
         {
             ClientId = clientId,
-            Client = client,
             Amount = plan.Price,
             Date = DateOnly.FromDateTime(DateTime.UtcNow),
             PaymentMethod = method.ToString().ToLower(),

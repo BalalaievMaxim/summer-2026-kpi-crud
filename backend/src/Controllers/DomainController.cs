@@ -1,35 +1,24 @@
-using System;
-using System.Threading.Tasks;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/test-domain2")]
-public class DomainController : ControllerBase
+public class DomainController(ICoachService coachService, IClassRepository classRepository) : ControllerBase
 {
-    private readonly ICoachRepository _coachRepo;
-    private readonly IClassRepository _classRepo;
-
-    public DomainController(ICoachRepository coachRepo, IClassRepository classRepo)
-    {
-        _coachRepo = coachRepo;
-        _classRepo = classRepo;
-    }
-
     [HttpGet("coaches")]
     public async Task<IActionResult> GetAllCoaches()
     {
-        var coaches = await _coachRepo.GetAllAsync();
-        return Ok(coaches);
+        var coaches = await coachService.GetAllAsync();
+        return Ok(coaches.Select(c => new { id = c.Id, name = c.Name.Value, specialization = c.Specialization.Value }));
     }
 
     [HttpGet("schedule/{date}")]
     public async Task<IActionResult> GetSchedule(DateTime date)
     {
-        var schedule = await _classRepo.GetScheduleForDateAsync(date);
+        var schedule = await classRepository.GetScheduleForDateAsync(date);
         return Ok(schedule);
     }
 }
