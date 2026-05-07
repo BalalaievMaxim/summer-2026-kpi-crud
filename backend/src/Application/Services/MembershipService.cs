@@ -1,7 +1,8 @@
+using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Clients;
 using GymManagement.Infrastructure.Persistence.Entities;
 using GymManagement.Infrastructure.Persistence.Entities.Enums;
 using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Application.Services.Interfaces;
 
 namespace GymManagement.Application.Services;
 
@@ -16,8 +17,7 @@ public class MembershipService(
 {
     public async Task PurchaseMembershipAsync(int clientId, int planId, PaymentMethod method, string? notes)
     {
-        var client = await clientRepository.GetClientByIdAsync(clientId);
-        if (client == null)
+        if (!await clientRepository.ExistsAsync(clientId))
             throw new KeyNotFoundException($"Client with ID {clientId} not found.");
 
         var plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(planId);

@@ -25,7 +25,7 @@ public class ClassFactoryTests
     {
         _coachRepoMock
             .Setup(r => r.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Coach.Create(coachId, "Test", "Coach", "Yoga", 1));
+            .ReturnsAsync(Coach.Reconstitute(coachId, "Test Coach", "coach@test.com", "Yoga", "pass1234"));
     }
 
     private void SetupNoScheduleConflict()

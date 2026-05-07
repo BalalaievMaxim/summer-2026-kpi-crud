@@ -15,7 +15,7 @@ namespace GymManagement.Presentation.Controllers;
 [Route("api/v1/enrollments")]
 public class EnrollmentController(IEnrollmentService enrollmentService) : ControllerBase
 {
-    // запис клієнта на заняття (складний сценарій створення з перевірками)
+    
     [HttpPost]
     [ProducesResponseType(typeof(Enrollment), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

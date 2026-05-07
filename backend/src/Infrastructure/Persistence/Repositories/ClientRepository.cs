@@ -1,91 +1,104 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Domain.Clients;
 using GymManagement.Infrastructure.DTOs;
 using GymManagement.Infrastructure.Persistence;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class ClientRepository(GymManagementContext context) : IClientRepository
+public class ClientRepository(GymManagementContext context) : IClientRepository, IClientAnalyticsRepository
 {
-    public Task<Client?> GetClientByIdAsync(int clientId)
+    
+    private static Client ToDomain(Entities.Client e)
+        => Client.Reconstitute(e.ClientId, e.Name, e.Email, e.Phone, e.Password);
+
+
+    public Task<bool> HasActiveEnrollmentsAsync(int clientId, CancellationToken ct = default)
+        => context.Enrollments.AnyAsync(e => e.ClientId == clientId, ct);
+
+    public Task<bool> HasActiveMembershipsAsync(int clientId, CancellationToken ct = default)
+        => context.Memberships.AnyAsync(m => m.ClientId == clientId && m.IsActive, ct);
+
+    public async Task<Client> AddAsync(Client client, CancellationToken ct = default)
     {
-        return GetByIdAsync(clientId);
-    }
-
-    public async Task<Client?> GetByIdAsync(int clientId)
-    {
-        return await context.Clients
-            .Where(c => c.ClientId == clientId)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task AddAsync(Client client)
-    {
-        await context.Clients.AddAsync(client);
-    }
-
-    public async Task<Client?> GetByIdWithMembershipsAsync(int clientId)
-    {
-        return await context.Clients
-            .Include(c => c.Memberships)
-            .FirstOrDefaultAsync(c => c.ClientId == clientId);
-    }
-
-
-
-    public async Task<Client?> GetByIdWithEnrollmentsAsync(int clientId)
-    {
-        return await context.Clients
-            .Include(c => c.Enrollments)
-            .FirstOrDefaultAsync(c => c.ClientId == clientId);
-    }
-
-    public async Task<List<Client>> SearchByNameOrEmailAsync(string searchTerm)
-    {
-        return await context.Clients
-            .Where(c => c.Name.Contains(searchTerm) || c.Email.Contains(searchTerm))
-            .ToListAsync();
-    }
-
-    public async Task<bool> ExistsWithEmailAsync(string email, int? excludeId = null)
-    {
-        var query = context.Clients.Where(c => c.Email == email);
-
-        if (excludeId.HasValue)
+        var entity = new Entities.Client
         {
+            Name = client.Name.Value,
+            Email = client.Email.Value,
+            Phone = client.Phone.Value,
+            Password = client.Password.Value,
+            CreatedAt = DateTime.UtcNow
+        };
+        await context.Clients.AddAsync(entity, ct);
+        await context.SaveChangesAsync(ct);
+        return ToDomain(entity);
+    }
+
+    public async Task<Client?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        var e = await context.Clients.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.ClientId == id, ct);
+        return e is null ? null : ToDomain(e);
+    }
+
+    public async Task<Client?> GetByEmailAsync(string email, CancellationToken ct = default)
+    {
+        var lower = email.ToLowerInvariant();
+        var e = await context.Clients.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Email == lower, ct);
+        return e is null ? null : ToDomain(e);
+    }
+
+    public async Task<IEnumerable<Client>> GetAllAsync(CancellationToken ct = default)
+    {
+        var list = await context.Clients.AsNoTracking().ToListAsync(ct);
+        return list.Select(ToDomain);
+    }
+
+    public async Task<IEnumerable<Client>> SearchAsync(string searchTerm, CancellationToken ct = default)
+    {
+        var lower = searchTerm.ToLowerInvariant();
+        var list = await context.Clients.AsNoTracking()
+            .Where(c => c.Name.ToLower().Contains(lower) || c.Email.Contains(lower))
+            .ToListAsync(ct);
+        return list.Select(ToDomain);
+    }
+
+    public Task<bool> ExistsAsync(int id, CancellationToken ct = default)
+        => context.Clients.AnyAsync(c => c.ClientId == id, ct);
+
+    public async Task<bool> ExistsByEmailAsync(string email, int? excludeId = null, CancellationToken ct = default)
+    {
+        var lower = email.ToLowerInvariant();
+        var query = context.Clients.Where(c => c.Email == lower);
+        if (excludeId.HasValue)
             query = query.Where(c => c.ClientId != excludeId.Value);
-        }
-
-        return await query.AnyAsync();
+        return await query.AnyAsync(ct);
     }
 
-    public Task UpdateAsync(Client client)
+    public async Task UpdateAsync(Client client, CancellationToken ct = default)
     {
-        context.Clients.Update(client);
-        return Task.CompletedTask;
+        var entity = await context.Clients
+            .FirstOrDefaultAsync(c => c.ClientId == client.Id, ct);
+        if (entity is null) return;
+
+        entity.Name = client.Name.Value;
+        entity.Email = client.Email.Value;
+        entity.Phone = client.Phone.Value;
+        entity.Password = client.Password.Value;
     }
 
-    public Task RemoveAsync(Client client)
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        context.Clients.Remove(client);
-        return Task.CompletedTask;
+        var entity = await context.Clients.FirstOrDefaultAsync(c => c.ClientId == id, ct);
+        if (entity is not null)
+            context.Clients.Remove(entity);
     }
 
-    public async Task<List<Client>> ListAsync()
-    {
-        return await context.Clients.ToListAsync();
-    }
-
-    // складний аналітичний запит для отримання активності клієнтів
-    // підрахунок кількості записів на заняття за останній місяць та обрахунок рангу
     public async Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync()
     {
-        var sql = @"
+        const string sql = """
             WITH ClientEnrollmentStats AS (
                 SELECT
                     c.client_id,
@@ -98,17 +111,17 @@ public class ClientRepository(GymManagementContext context) : IClientRepository
                 GROUP BY c.client_id, c.name, c.email
             )
             SELECT
-                ses.client_id AS ""ClientId"",
-                ses.name AS ""Name"",
-                ses.email AS ""Email"",
-                ses.TotalEnrollments AS ""TotalEnrollments"",
-                RANK() OVER (ORDER BY ses.TotalEnrollments DESC) AS ""ClientRank""
+                ses.client_id AS "ClientId",
+                ses.name AS "Name",
+                ses.email AS "Email",
+                ses.TotalEnrollments AS "TotalEnrollments",
+                RANK() OVER (ORDER BY ses.TotalEnrollments DESC) AS "ClientRank"
             FROM ClientEnrollmentStats ses
-            ORDER BY ""ClientRank"" ASC, ""TotalEnrollments"" DESC;
-        ";
-        
+            ORDER BY "ClientRank" ASC, "TotalEnrollments" DESC;
+            """;
+
         return await context.Database
-            .SqlQuery<ClientActivityDto>(System.Runtime.CompilerServices.FormattableStringFactory.Create(sql))
+            .SqlQuery<ClientActivityDto>(FormattableStringFactory.Create(sql))
             .ToListAsync();
     }
 }
