@@ -27,7 +27,7 @@ public class EnrollmentFactoryTests
         var cls = Class.Create(1, classTypeId: 1, coachId: 1, FutureStart, FutureEnd, capacity);
         for (int i = 1; i <= enrolledCount; i++)
         {
-            cls.Enroll(clientId: 1000 + i); // use high IDs to avoid conflicts
+            cls.Enroll(clientId: 1000 + i); 
         }
         return cls;
     }

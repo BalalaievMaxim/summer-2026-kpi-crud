@@ -6,65 +6,154 @@ namespace GymManagement.Tests.Unit.Domain;
 
 public class ClientTests
 {
+    private const string ValidName = "John Doe";
+    private const string ValidEmail = "john@example.com";
+    private const string ValidPhone = "+380671234567";
+    private const string ValidPassword = "pass1234";
+
     [Fact]
     public void Create_ValidData_ReturnsClient()
     {
-        var client = Client.Create(1, "John", "Doe", "john@example.com", "+380671234567");
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
 
-        client.Id.Should().Be(1);
-        client.FirstName.Should().Be("John");
-        client.LastName.Should().Be("Doe");
-        client.Email.Value.Should().Be("john@example.com");
-        client.Phone.Value.Should().Be("+380671234567");
+        client.Name.Value.Should().Be(ValidName);
+        client.Email.Value.Should().Be(ValidEmail);
+        client.Phone.Value.Should().Be(ValidPhone);
+        client.Password.Value.Should().Be(ValidPassword);
+        client.Id.Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Create_EmptyName_ThrowsInvalidClientNameError(string name)
+    {
+        var act = () => Client.Create(name, ValidEmail, ValidPhone, ValidPassword);
+        act.Should().Throw<InvalidClientNameError>();
     }
 
     [Fact]
     public void Create_InvalidEmail_ThrowsInvalidEmailError()
     {
-        var act = () => Client.Create(1, "John", "Doe", "not-an-email", "+380671234567");
+        var act = () => Client.Create(ValidName, "not-an-email", ValidPhone, ValidPassword);
         act.Should().Throw<InvalidEmailError>();
     }
 
     [Fact]
     public void Create_InvalidPhone_ThrowsInvalidPhoneNumberError()
     {
-        var act = () => Client.Create(1, "John", "Doe", "john@example.com", "abc");
+        var act = () => Client.Create(ValidName, ValidEmail, "abc", ValidPassword);
         act.Should().Throw<InvalidPhoneNumberError>();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("abc")]
+    public void Create_ShortPassword_ThrowsInvalidPasswordError(string password)
+    {
+        var act = () => Client.Create(ValidName, ValidEmail, ValidPhone, password);
+        act.Should().Throw<InvalidPasswordError>();
     }
 
     [Fact]
     public void UpdateContact_ValidData_UpdatesEmailAndPhone()
     {
-        var client = Client.Create(1, "John", "Doe", "old@example.com", "+380671111111");
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
 
-        client.UpdateContact("new@example.com", "+380672222222");
+        client.UpdateContact("new@example.com", "+380679999999");
 
         client.Email.Value.Should().Be("new@example.com");
-        client.Phone.Value.Should().Be("+380672222222");
+        client.Phone.Value.Should().Be("+380679999999");
     }
 
     [Fact]
     public void UpdateContact_InvalidEmail_Throws()
     {
-        var client = Client.Create(1, "John", "Doe", "john@example.com", "+380671234567");
-
-        var act = () => client.UpdateContact("bad", "+380671234567");
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var act = () => client.UpdateContact("bad-email", ValidPhone);
         act.Should().Throw<InvalidEmailError>();
+    }
+
+    [Fact]
+    public void UpdateName_ValidName_Updates()
+    {
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+
+        client.UpdateName("Jane Smith");
+
+        client.Name.Value.Should().Be("Jane Smith");
+    }
+
+    [Fact]
+    public void UpdateName_EmptyName_ThrowsInvalidClientNameError()
+    {
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var act = () => client.UpdateName("   ");
+        act.Should().Throw<InvalidClientNameError>();
+    }
+
+    [Fact]
+    public void MatchesPassword_CorrectPassword_ReturnsTrue()
+    {
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        client.MatchesPassword(ValidPassword).Should().BeTrue();
+    }
+
+    [Fact]
+    public void MatchesPassword_WrongPassword_ReturnsFalse()
+    {
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        client.MatchesPassword("wrongpass").Should().BeFalse();
+    }
+
+    [Fact]
+    public void ChangePassword_ValidCurrentPassword_ChangesPassword()
+    {
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+
+        client.ChangePassword(ValidPassword, "newpass99");
+
+        client.MatchesPassword("newpass99").Should().BeTrue();
+        client.MatchesPassword(ValidPassword).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ChangePassword_WrongCurrentPassword_ThrowsInvalidCredentialsError()
+    {
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var act = () => client.ChangePassword("wrongpass", "newpass99");
+        act.Should().Throw<InvalidCredentialsError>();
+    }
+
+    [Fact]
+    public void ChangePassword_ShortNewPassword_ThrowsInvalidPasswordError()
+    {
+        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var act = () => client.ChangePassword(ValidPassword, "abc");
+        act.Should().Throw<InvalidPasswordError>();
+    }
+
+    [Fact]
+    public void Reconstitute_AssignsCorrectId()
+    {
+        var client = Client.Reconstitute(42, ValidName, ValidEmail, ValidPhone, ValidPassword);
+        client.Id.Should().Be(42);
+        client.Name.Value.Should().Be(ValidName);
     }
 
     [Fact]
     public void TwoClients_SameId_AreEqual()
     {
-        var a = Client.Create(5, "John", "Doe", "a@example.com", "+380671234567");
-        var b = Client.Create(5, "Jane", "Smith", "b@example.com", "+380679999999");
+        var a = Client.Reconstitute(5, "Alice", "a@example.com", ValidPhone, ValidPassword);
+        var b = Client.Reconstitute(5, "Bob", "b@example.com", ValidPhone, ValidPassword);
         a.Should().Be(b);
     }
 
     [Fact]
     public void TwoClients_DifferentIds_AreNotEqual()
     {
-        var a = Client.Create(1, "John", "Doe", "a@example.com", "+380671234567");
-        var b = Client.Create(2, "John", "Doe", "a@example.com", "+380671234567");
+        var a = Client.Reconstitute(1, ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var b = Client.Reconstitute(2, ValidName, ValidEmail, ValidPhone, ValidPassword);
         a.Should().NotBe(b);
     }
 }

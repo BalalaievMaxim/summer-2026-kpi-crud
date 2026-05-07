@@ -13,15 +13,15 @@ public class ClientManagementTests(GymApiFactory factory) : BaseIntegrationTest(
     [Fact]
     public async Task UpdateClient_Should_Fail_When_NewEmailAlreadyExists()
     {
-        var client1 = new Client { Name = "Перший клієнт", Email = "first@test.com", Phone = "111", Password = "p" };
-        var client2 = new Client { Name = "Другий клієнт", Email = "second@test.com", Phone = "222", Password = "p" };
+        var client1 = new Client { Name = "Перший клієнт", Email = "first@test.com", Phone = "1234567", Password = "pass1234" };
+        var client2 = new Client { Name = "Другий клієнт", Email = "second@test.com", Phone = "7654321", Password = "pass1234" };
         Context.Clients.AddRange(client1, client2);
         await Context.SaveChangesAsync();
 
         var updateDto = new UpdateClientDto
         {
             Email = "second@test.com",
-            Phone = "333"
+            Phone = "3334444"
         };
 
         var response = await Client.PutAsJsonAsync($"/api/v1/clients/{client1.ClientId}", updateDto);
@@ -29,13 +29,13 @@ public class ClientManagementTests(GymApiFactory factory) : BaseIntegrationTest(
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var content = await response.Content.ReadAsStringAsync();
-        content.Should().Contain("Email is already in use");
+        content.Should().Contain("already exists");
     }
 
     [Fact]
-    public async Task DeleteClient_Should_RemoveClient_And_CascadeDeleteEnrollments()
+    public async Task DeleteClient_WithActiveEnrollments_Should_Return400()
     {
-        var coach = new Coach { Name = "Іван Піддубний", Specialization = "Тренер", Email = "ivan@test.com", Password = "p" };
+        var coach = new Coach { Name = "Іван Піддубний", Specialization = "Тренер", Email = "ivan@test.com", Password = "pass1234" };
         var classType = new ClassType { Name = "Якесь заняття" };
         Context.AddRange(coach, classType);
         await Context.SaveChangesAsync();
@@ -50,7 +50,7 @@ public class ClientManagementTests(GymApiFactory factory) : BaseIntegrationTest(
         };
         Context.Classes.Add(gymClass);
 
-        var client = new Client { Name = "Приречений клієнт", Email = "delete@test.com", Phone = "000", Password = "p" };
+        var client = new Client { Name = "Клієнт з записами", Email = "delete@test.com", Phone = "1234567", Password = "pass1234" };
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 
@@ -58,19 +58,19 @@ public class ClientManagementTests(GymApiFactory factory) : BaseIntegrationTest(
         Context.Enrollments.Add(enrollment);
         await Context.SaveChangesAsync();
 
-        Context.Clients.Any(c => c.ClientId == client.ClientId).Should().BeTrue();
-        Context.Enrollments.Any(e => e.EnrollmentId == enrollment.EnrollmentId).Should().BeTrue();
-
         var response = await Client.DeleteAsync($"/api/v1/clients/{client.ClientId}");
 
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("active enrollments");
 
         Context.ChangeTracker.Clear();
 
         var clientInDb = await Context.Clients.FirstOrDefaultAsync(c => c.ClientId == client.ClientId);
-        clientInDb.Should().BeNull();
+        clientInDb.Should().NotBeNull();
 
         var enrollmentInDb = await Context.Enrollments.FirstOrDefaultAsync(e => e.EnrollmentId == enrollment.EnrollmentId);
-        enrollmentInDb.Should().BeNull();
+        enrollmentInDb.Should().NotBeNull();
     }
 }

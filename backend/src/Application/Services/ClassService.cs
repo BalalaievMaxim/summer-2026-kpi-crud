@@ -1,9 +1,9 @@
-using GymManagement.Infrastructure.Persistence.Entities;
 using GymManagement.Application.Exceptions;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Infrastructure.DTOs;
-using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Coaches;
+using GymManagement.Infrastructure.DTOs;
+using GymManagement.Infrastructure.Persistence.Entities;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 
 namespace GymManagement.Application.Services;
 
@@ -37,9 +37,8 @@ public class ClassService : IClassService
         if (classType == null)
             throw new NotFoundException($"ClassType with ID {classTypeId} not found.");
 
-        var coach = await _coachRepository.GetByIdAsync(coachId);
-        if (coach == null)
-            throw new NotFoundException($"Coach with ID {coachId} not found.");
+        var coach = await _coachRepository.GetByIdAsync(coachId)
+            ?? throw new NotFoundException($"Coach with ID {coachId} not found.");
 
         if (startTime >= endTime)
             throw new InvalidOperationException("Start time must be before end time.");
@@ -75,29 +74,25 @@ public class ClassService : IClassService
         if (classEntity == null)
             return null;
 
-        // Перевірка чи заняття вже почалося
         if (classEntity.StartTime < DateTime.UtcNow)
             throw new InvalidOperationException("Cannot update a class that has already started.");
 
-        // Валідація нового часу
         if (newStartTime >= newEndTime)
             throw new InvalidOperationException("Start time must be before end time.");
 
         if (newStartTime < DateTime.UtcNow)
             throw new InvalidOperationException("Cannot schedule a class in the past.");
 
-        // Перевірка конфлікту часу для тренера (виключаючи поточне заняття)
         var hasConflict = await _classRepository.HasTimeConflictForCoachAsync(
             classEntity.CoachId, 
             newStartTime, 
             newEndTime, 
-            classId); // excludeClassId
+            classId);
         
         if (hasConflict)
             throw new InvalidOperationException(
                 "Coach already has a class scheduled during this time.");
 
-        // Оновлення часу
         classEntity.StartTime = newStartTime;
         classEntity.EndTime = newEndTime;
 
@@ -172,7 +167,7 @@ public class ClassService : IClassService
         return new CoachWorkloadDto
         {
             CoachId = coachId,
-            CoachName = coach.Name,
+            CoachName = coach.Name.Value,
             TotalClassesScheduled = classes.Count(),
             TotalHoursWorked = (int)totalHours,
             AverageClassSize = averageSize

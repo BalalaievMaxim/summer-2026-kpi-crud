@@ -1,102 +1,90 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Domain.Coaches;
 using GymManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class CoachRepository : ICoachRepository
+public class CoachRepository(GymManagementContext context) : ICoachRepository
 {
-    private readonly GymManagementContext _context;
+    private static Coach ToDomain(Entities.Coach e)
+        => Coach.Reconstitute(e.CoachId, e.Name, e.Email, e.Specialization, e.Password);
 
-    public CoachRepository(GymManagementContext context)
+    public async Task<Coach> AddAsync(Coach coach, CancellationToken ct = default)
     {
-        _context = context;
+        var entity = new Entities.Coach
+        {
+            Name = coach.Name.Value,
+            Email = coach.Email.Value,
+            Specialization = coach.Specialization.Value,
+            Password = coach.Password.Value,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Coaches.Add(entity);
+        await context.SaveChangesAsync(ct);
+        return ToDomain(entity);
     }
 
-    public async Task<Coach?> GetByIdAsync(int id)
+    public async Task<Coach?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _context.Coaches
-            .Include(c => c.Classes)
-                .ThenInclude(cl => cl.ClassType)
-            .FirstOrDefaultAsync(c => c.CoachId == id);
+        var e = await context.Coaches.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.CoachId == id, ct);
+        return e is null ? null : ToDomain(e);
     }
 
-    public async Task<IEnumerable<Coach>> GetAllAsync()
+    public async Task<IEnumerable<Coach>> GetAllAsync(CancellationToken ct = default)
     {
-        return await _context.Coaches
+        var list = await context.Coaches.AsNoTracking()
             .OrderBy(c => c.Name)
-            .ToListAsync();
+            .ToListAsync(ct);
+        return list.Select(ToDomain);
     }
 
-    public async Task<Coach> CreateAsync(Coach coach)
+    public async Task<IEnumerable<Coach>> GetBySpecializationAsync(string specialization, CancellationToken ct = default)
     {
-        if (await EmailExistsAsync(coach.Email))
-        {
-            throw new InvalidOperationException($"Coach with email {coach.Email} already exists");
-        }
-
-        _context.Coaches.Add(coach);
-        await _context.SaveChangesAsync();
-        return coach;
+        var list = await context.Coaches.AsNoTracking()
+            .Where(c => c.Specialization == specialization)
+            .OrderBy(c => c.Name)
+            .ToListAsync(ct);
+        return list.Select(ToDomain);
     }
 
-    public async Task<Coach?> UpdateAsync(Coach coach)
+    public Task<bool> ExistsAsync(int id, CancellationToken ct = default)
+        => context.Coaches.AnyAsync(c => c.CoachId == id, ct);
+
+    public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
+        => context.Coaches.AnyAsync(c => c.Email == email.ToLowerInvariant(), ct);
+
+    public async Task<bool> HasUpcomingClassesWithEnrollmentsAsync(int coachId, CancellationToken ct = default)
+        => await context.Classes
+            .Where(c => c.CoachId == coachId && c.StartTime > DateTime.UtcNow)
+            .AnyAsync(c => c.Enrollments.Count > 0, ct);
+
+    public async Task UpdateAsync(Coach coach, CancellationToken ct = default)
     {
-        var existing = await _context.Coaches.FindAsync(coach.CoachId);
-        if (existing == null)
-        {
-            return null;
-        }
+        var entity = await context.Coaches
+            .FirstOrDefaultAsync(c => c.CoachId == coach.Id, ct);
+        if (entity is null) return;
 
-        if (existing.Email != coach.Email && await EmailExistsAsync(coach.Email))
-        {
-            throw new InvalidOperationException($"Email {coach.Email} is already taken");
-        }
-
-        existing.Name = coach.Name;
-        existing.Specialization = coach.Specialization;
-        existing.Email = coach.Email;
-
-        await _context.SaveChangesAsync();
-        return existing;
+        entity.Name = coach.Name.Value;
+        entity.Email = coach.Email.Value;
+        entity.Specialization = coach.Specialization.Value;
+        entity.Password = coach.Password.Value;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
     {
-        var coach = await _context.Coaches.FindAsync(id);
-        if (coach == null)
-        {
-            return false;
-        }
-
-        _context.Coaches.Remove(coach);
+        var entity = await context.Coaches.FindAsync([id], ct);
+        if (entity is null) return false;
+        context.Coaches.Remove(entity);
         return true;
     }
 
-    public async Task<IEnumerable<Coach>> GetBySpecializationAsync(string specialization)
+    public async Task DeleteUpcomingClassesByCoachAsync(int coachId, CancellationToken ct = default)
     {
-        return await _context.Coaches
-            .Where(c => c.Specialization == specialization)
-            .OrderBy(c => c.Name)
-            .ToListAsync();
-    }
+        var upcomingClasses = await context.Classes
+            .Where(c => c.CoachId == coachId && c.StartTime > DateTime.UtcNow)
+            .ToListAsync(ct);
 
-    public async Task<bool> EmailExistsAsync(string email)
-    {
-        return await _context.Coaches.AnyAsync(c => c.Email == email);
-    }
-
-    public async Task<bool> ExistsAsync(int id)
-    {
-        return await _context.Coaches.AnyAsync(c => c.CoachId == id);
-    }
-
-    public async Task<bool> HasScheduledClassesAsync(int coachId, DateTime from, DateTime to)
-    {
-        return await _context.Classes
-            .AnyAsync(c => c.CoachId == coachId 
-                && c.StartTime >= from 
-                && c.EndTime <= to);
+        context.Classes.RemoveRange(upcomingClasses);
     }
 }

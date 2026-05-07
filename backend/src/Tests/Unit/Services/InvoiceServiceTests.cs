@@ -13,7 +13,7 @@ namespace GymManagement.Tests.Unit.Services;
 public class InvoiceServiceTests
 {
     private readonly Mock<IMembershipPlanRepository> _planRepoMock;
-    private readonly Mock<IClientRepository> _clientRepoMock;
+    private readonly Mock<GymManagement.Domain.Clients.IClientRepository> _clientRepoMock;
     private readonly Mock<IInvoiceRepository> _invoiceRepoMock;
     private readonly Mock<IMembershipRepository> _membershipRepoMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
@@ -22,7 +22,7 @@ public class InvoiceServiceTests
     public InvoiceServiceTests()
     {
         _planRepoMock = new Mock<IMembershipPlanRepository>();
-        _clientRepoMock = new Mock<IClientRepository>();
+        _clientRepoMock = new Mock<GymManagement.Domain.Clients.IClientRepository>();
         _invoiceRepoMock = new Mock<IInvoiceRepository>();
         _membershipRepoMock = new Mock<IMembershipRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
@@ -71,10 +71,9 @@ public class InvoiceServiceTests
         var clientId = 1;
         var planId = 1;
         var plan = new MembershipPlan { Price = 500 };
-        var client = new Client { ClientId = clientId };
 
         _planRepoMock.Setup(r => r.GetMembershipPlanByIdAsync(planId)).ReturnsAsync(plan);
-        _clientRepoMock.Setup(r => r.GetClientByIdAsync(clientId)).ReturnsAsync(client);
+        _clientRepoMock.Setup(r => r.ExistsAsync(clientId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var result = await _service.CreateInvoiceAsync(clientId, PaymentMethod.Cash, planId, "Test");
 
@@ -89,7 +88,7 @@ public class InvoiceServiceTests
     public async Task CreateInvoice_ClientNotFound_Should_ThrowNotFoundException()
     {
         _planRepoMock.Setup(r => r.GetMembershipPlanByIdAsync(1)).ReturnsAsync(new MembershipPlan());
-        _clientRepoMock.Setup(r => r.GetClientByIdAsync(1)).ReturnsAsync((Client)null!);
+        _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         var act = async () => await _service.CreateInvoiceAsync(1, PaymentMethod.Card, 1, null);
 
