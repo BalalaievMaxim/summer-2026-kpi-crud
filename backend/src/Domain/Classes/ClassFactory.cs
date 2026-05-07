@@ -15,13 +15,6 @@ public class ClassFactory
         _coachRepo = coachRepo;
     }
 
-    /// <summary>
-    /// Creates a new Class aggregate after validating all invariants:
-    /// - TimeRange is valid and not in the past
-    /// - Capacity is positive
-    /// - Coach exists
-    /// - Coach has no schedule conflicts
-    /// </summary>
     public async Task<Class> CreateAsync(
         int classTypeId,
         int coachId,
@@ -30,7 +23,6 @@ public class ClassFactory
         int capacity,
         CancellationToken cancellationToken = default)
     {
-        // Simple invariants
         if (capacity <= 0)
             throw new InvalidCapacityError();
 
@@ -39,7 +31,6 @@ public class ClassFactory
         if (schedule.IsInPast())
             throw new ClassInPastError();
 
-        // Complex invariants (require repository)
         var coach = await _coachRepo.GetByIdAsync(coachId, cancellationToken);
         if (coach is null)
             throw new CoachNotFoundForClassError(coachId);

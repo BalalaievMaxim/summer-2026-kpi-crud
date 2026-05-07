@@ -6,7 +6,6 @@ namespace GymManagement.Tests.Unit.Domain;
 
 public class TimeRangeTests
 {
-    // --- Create ---
 
     [Fact]
     public void Create_ValidRange_ReturnsTimeRange()
@@ -49,7 +48,6 @@ public class TimeRangeTests
         act.Should().Throw<InvalidTimeRangeError>();
     }
 
-    // --- OverlapsWith ---
 
     [Fact]
     public void OverlapsWith_OverlappingRanges_ReturnsTrue()
@@ -94,7 +92,6 @@ public class TimeRangeTests
         a.OverlapsWith(b).Should().BeFalse();
     }
 
-    // --- IsInPast ---
 
     [Fact]
     public void IsInPast_PastRange_ReturnsTrue()
@@ -116,7 +113,6 @@ public class TimeRangeTests
         range.IsInPast().Should().BeFalse();
     }
 
-    // --- Equality ---
 
     [Fact]
     public void Equals_SameStartAndEnd_AreEqual()

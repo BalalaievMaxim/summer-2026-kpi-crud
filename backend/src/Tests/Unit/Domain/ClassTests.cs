@@ -13,7 +13,6 @@ public class ClassTests
     private static Class CreateFutureClass(int capacity = 10, int id = 1)
         => Class.Create(id, classTypeId: 1, coachId: 1, FutureStart, FutureEnd, capacity);
 
-    // --- Create ---
 
     [Fact]
     public void Create_ValidData_ReturnsClass()
@@ -43,7 +42,6 @@ public class ClassTests
         act.Should().Throw<InvalidCapacityError>();
     }
 
-    // --- Enroll ---
 
     [Fact]
     public void Enroll_ValidClient_AddsEnrollment()
@@ -88,7 +86,6 @@ public class ClassTests
         act.Should().Throw<DuplicateEnrollmentError>();
     }
 
-    // --- CancelEnrollment ---
 
     [Fact]
     public void CancelEnrollment_ExistingClient_RemovesEnrollment()
@@ -111,7 +108,6 @@ public class ClassTests
         act.Should().Throw<EnrollmentNotFoundInClassError>();
     }
 
-    // --- IsFull ---
 
     [Fact]
     public void IsFull_AtCapacity_ReturnsTrue()
@@ -132,7 +128,6 @@ public class ClassTests
         cls.IsFull.Should().BeFalse();
     }
 
-    // --- HasCapacityFor ---
 
     [Fact]
     public void HasCapacityFor_EnoughSlots_ReturnsTrue()
@@ -152,7 +147,6 @@ public class ClassTests
         cls.HasCapacityFor(3).Should().BeFalse();
     }
 
-    // --- Reschedule ---
 
     [Fact]
     public void Reschedule_ValidFutureRange_UpdatesSchedule()
@@ -179,7 +173,6 @@ public class ClassTests
         act.Should().Throw<ClassInPastError>();
     }
 
-    // --- Identity equality ---
 
     [Fact]
     public void TwoClasses_SameId_AreEqual()

@@ -15,24 +15,16 @@ public class EnrollmentFactory
         _enrollmentRepo = enrollmentRepo;
     }
 
-    /// <summary>
-    /// Creates a new Enrollment after validating all invariants:
-    /// - ClientId and ClassId are positive
-    /// - Class exists and is not full
-    /// - Client is not already enrolled in the class
-    /// </summary>
     public async Task<Enrollment> CreateAsync(
         int clientId,
         int classId,
         CancellationToken cancellationToken = default)
     {
-        // Simple invariants
         if (clientId <= 0)
             throw new InvalidEnrollmentError("ClientId must be a positive number.");
         if (classId <= 0)
             throw new InvalidEnrollmentError("ClassId must be a positive number.");
 
-        // Complex invariants (require repository)
         var classEntity = await _classRepo.GetByIdAsync(classId, cancellationToken);
         if (classEntity is null)
             throw new ClassNotFoundError(classId);

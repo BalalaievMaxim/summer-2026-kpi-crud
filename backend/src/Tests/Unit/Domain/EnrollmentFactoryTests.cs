@@ -55,7 +55,6 @@ public class EnrollmentFactoryTests
             .ReturnsAsync(true);
     }
 
-    // --- Success ---
 
     [Fact]
     public async Task CreateAsync_ValidData_ReturnsEnrollment()
@@ -71,7 +70,6 @@ public class EnrollmentFactoryTests
         enrollment.ClassId.Should().Be(1);
     }
 
-    // --- Simple invariants ---
 
     [Fact]
     public async Task CreateAsync_InvalidClientId_ThrowsInvalidEnrollmentError()
@@ -87,7 +85,6 @@ public class EnrollmentFactoryTests
         await act.Should().ThrowAsync<InvalidEnrollmentError>();
     }
 
-    // --- Complex invariants (via repos) ---
 
     [Fact]
     public async Task CreateAsync_ClassNotFound_ThrowsClassNotFoundError()
