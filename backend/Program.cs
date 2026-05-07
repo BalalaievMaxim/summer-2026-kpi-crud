@@ -1,6 +1,9 @@
 using System.Text.Json.Serialization;
 using GymManagement.Application.Services;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Clients;
+using GymManagement.Domain.Coaches;
+using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using GymManagement.Infrastructure;
 using GymManagement.Infrastructure.Persistence;
 using GymManagement.Infrastructure.Persistence.Repositories;
@@ -19,17 +22,22 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
 builder.Services.AddScoped<IMembershipPlanRepository, MembershipPlanRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<ICoachRepository, CoachRepository>();
 builder.Services.AddScoped<IClassTypeRepository, ClassTypeRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 
+builder.Services.AddScoped<ClientRepository>();
+builder.Services.AddScoped<IClientRepository>(sp => sp.GetRequiredService<ClientRepository>());
+builder.Services.AddScoped<GymManagement.Infrastructure.Persistence.Repositories.Interfaces.IClientAnalyticsRepository>(sp => sp.GetRequiredService<ClientRepository>());
+
+builder.Services.AddScoped<ICoachRepository, CoachRepository>();
+
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<ICoachService, CoachService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
-builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 
 builder.Services.AddCors(options =>

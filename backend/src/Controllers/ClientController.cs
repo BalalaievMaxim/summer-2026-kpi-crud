@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Application.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.DTOs;
 using GymManagement.Application.DTOs;
+using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Clients.Errors;
+using GymManagement.Domain.Shared;
+using GymManagement.Infrastructure.DTOs;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.Presentation.Controllers;
 
@@ -15,6 +12,39 @@ namespace GymManagement.Presentation.Controllers;
 [Route("api/v1/clients")]
 public class ClientController(IClientService clientService) : ControllerBase
 {
+    [HttpPost("register")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Register([FromBody] CreateClientDto dto)
+    {
+        try
+        {
+            var client = await clientService.RegisterClientAsync(dto);
+            return CreatedAtAction(nameof(Register), new { id = client.Id }, new
+            {
+                id = client.Id,
+                name = client.Name.Value,
+                email = client.Email.Value,
+                phone = client.Phone.Value
+            });
+        }
+        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+    }
+
+    [HttpPost("login")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    {
+        try
+        {
+            var client = await clientService.LoginClientAsync(dto.Email, dto.Password);
+            return Ok(new { id = client.Id, name = client.Name.Value, email = client.Email.Value });
+        }
+        catch (InvalidCredentialsError ex) { return Unauthorized(new { code = ex.Code, error = ex.Message }); }
+        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+    }
+
     [HttpPut("{clientId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -26,21 +56,10 @@ public class ClientController(IClientService clientService) : ControllerBase
             await clientService.UpdateClientAsync(clientId, dto);
             return NoContent();
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("Email is already in use"))
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = $"Internal server error: {ex.Message}" });
-        }
+        catch (ClientNotFoundError ex) { return NotFound(new { code = ex.Code, error = ex.Message }); }
+        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
     }
-    
-    // hard delete
+
     [HttpDelete("{clientId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -51,92 +70,37 @@ public class ClientController(IClientService clientService) : ControllerBase
             await clientService.DeleteClientAsync(clientId);
             return NoContent();
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = $"Internal server error: {ex.Message}" });
-        }
+        catch (ClientNotFoundError ex) { return NotFound(new { code = ex.Code, error = ex.Message }); }
+        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
     }
 
-    // пошук клієнтів за ім'ям або email (простий запит)
     [HttpGet("search")]
-    [ProducesResponseType(typeof(List<Client>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SearchClients([FromQuery] string searchTerm)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
-        {
             return BadRequest(new { error = "Search term cannot be empty." });
-        }
+
         var clients = await clientService.SearchClientsAsync(searchTerm);
-        return Ok(clients);
+        return Ok(clients.Select(c => new { clientId = c.Id, name = c.Name.Value, email = c.Email.Value }));
     }
 
-    // історія занять клієнта (простий запит)
     [HttpGet("{clientId}/history")]
-    [ProducesResponseType(typeof(Client), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetClientHistory(int clientId)
     {
-        try
-        {
-            var client = await clientService.GetClientClassHistoryAsync(clientId);
-            return Ok(client);
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = $"Internal server error: {ex.Message}" });
-        }
+        var client = await clientService.GetByIdAsync(clientId);
+        if (client is null) return NotFound();
+        return Ok(new { id = client.Id, name = client.Name.Value, email = client.Email.Value, phone = client.Phone.Value });
     }
-    
-    // аналітика активності клієнтів (складний запит з віконною функцією)
+
     [HttpGet("analytics/activity")]
     [ProducesResponseType(typeof(List<ClientActivityDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ClientActivityDto>>> GetClientActivityAnalytics()
     {
         var analytics = await clientService.GetClientActivityAnalyticsAsync();
         return Ok(analytics);
-    }
-
-    [HttpPost("register")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] CreateClientDto dto)
-    {
-        try
-        {
-            var client = await clientService.RegisterClientAsync(dto);
-            return CreatedAtAction(nameof(Register), new { id = client.ClientId }, new
-            {
-                client.ClientId,
-                client.Name,
-                client.Email,
-                client.Phone
-            });
-        }
-        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
-        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
-    }
-
-    [HttpPost("login")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
-    {
-        try
-        {
-            var client = await clientService.LoginClientAsync(dto.Email, dto.Password);
-            return Ok(new { client.ClientId, client.Name, client.Email, client.Phone });
-        }
-        catch (InvalidOperationException ex) { return Unauthorized(new { error = ex.Message }); }
-        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
     }
 }

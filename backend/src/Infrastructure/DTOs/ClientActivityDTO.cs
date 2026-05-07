@@ -6,5 +6,5 @@ public class ClientActivityDto
     public required string Name { get; set; }
     public required string Email { get; set; }
     public int TotalEnrollments { get; set; }
-    public int ClientRank { get; set; } // RANK() OVER window function
+    public int ClientRank { get; set; } 
 }

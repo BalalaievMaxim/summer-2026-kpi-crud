@@ -1,74 +1,52 @@
+using GymManagement.Application.DTOs;
+using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Clients;
 using GymManagement.Infrastructure.Persistence.Entities;
 using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Application.Services.Interfaces;
-using GymManagement.Infrastructure.DTOs;
-using GymManagement.Application.DTOs;
 
 namespace GymManagement.Application.Services;
 
-public class EnrollmentService : IEnrollmentService
+public class EnrollmentService(
+    IEnrollmentRepository enrollmentRepository,
+    IClientRepository clientRepository,
+    IClassRepository classRepository,
+    IMembershipRepository membershipRepository,
+    IUnitOfWork unitOfWork) : IEnrollmentService
 {
-    private readonly IEnrollmentRepository _enrollmentRepository;
-    private readonly IClientRepository _clientRepository;
-    private readonly IClassRepository _classRepository;
-    private readonly IUnitOfWork _unitOfWork;
-
-    public EnrollmentService(
-        IEnrollmentRepository enrollmentRepository, 
-        IClientRepository clientRepository, 
-        IClassRepository classRepository, 
-        IUnitOfWork unitOfWork)
+    public async Task<Enrollment> CreateEnrollmentAsync(CreateEnrollmentDto dto)
     {
-        _enrollmentRepository = enrollmentRepository;
-        _clientRepository = clientRepository;
-        _classRepository = classRepository;
-        _unitOfWork = unitOfWork;
-    }
-
-    public async Task<Enrollment> CreateEnrollmentAsync(CreateEnrollmentDto createEnrollmentDto)
-    {
-        var client = await _clientRepository.GetByIdWithMembershipsAsync(createEnrollmentDto.ClientId);
-        if (client == null)
-        {
+        if (!await clientRepository.ExistsAsync(dto.ClientId))
             throw new InvalidOperationException("Client not found.");
-        }
 
-        var @class = await _classRepository.GetByIdWithEnrollmentsAsync(createEnrollmentDto.ClassId);
+        var @class = await classRepository.GetByIdWithEnrollmentsAsync(dto.ClassId);
         if (@class == null)
-        {
             throw new InvalidOperationException("Class not found.");
-        }
 
-        if (@class.Enrollments.Any(e => e.ClientId == createEnrollmentDto.ClientId))
-        {
+        if (@class.Enrollments.Any(e => e.ClientId == dto.ClientId))
             throw new InvalidOperationException("Client is already enrolled in this class.");
-        }
 
         if (@class.Enrollments.Count >= @class.Capacity)
-        {
             throw new InvalidOperationException("Class is full.");
-        }
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var hasActiveMembership = client.Memberships.Any(m => 
-            m.IsActive == true && 
-            m.StartDate <= today && 
+        var activeMemberships = await membershipRepository.GetActiveMembershipsByClientAsync(dto.ClientId);
+        var hasActiveMembership = activeMemberships.Any(m =>
+            m.IsActive == true &&
+            m.StartDate <= today &&
             m.EndDate >= today);
 
         if (!hasActiveMembership)
-        {
             throw new InvalidOperationException("Client does not have an active membership.");
-        }
 
         var enrollment = new Enrollment
         {
-            ClientId = createEnrollmentDto.ClientId,
-            ClassId = createEnrollmentDto.ClassId,
+            ClientId = dto.ClientId,
+            ClassId = dto.ClassId,
             RegistrationTime = DateTime.UtcNow
         };
 
-        await _enrollmentRepository.AddAsync(enrollment);
-        await _unitOfWork.SaveChangesAsync();
+        await enrollmentRepository.AddAsync(enrollment);
+        await unitOfWork.SaveChangesAsync();
 
         return enrollment;
     }
