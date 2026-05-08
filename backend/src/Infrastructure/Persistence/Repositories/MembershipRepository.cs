@@ -1,44 +1,66 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Infrastructure.Persistence;
+using GymManagement.Domain.Memberships;
+using GymManagement.Infrastructure.Persistence.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class MembershipRepository(GymManagementContext context) : IMembershipRepository
+public class MembershipRepository : IMembershipRepository
 {
+    private readonly GymManagementContext _context;
+
+    public MembershipRepository(GymManagementContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<Membership?> GetByIdAsync(Guid id)
+    {
+        var intId = GuidToInt(id);
+        var entity = await _context.Memberships
+            .Include(m => m.MembershipPlan)
+            .ThenInclude(p => p.PlanAccesses)
+            .FirstOrDefaultAsync(m => m.MembershipId == intId);
+
+        return entity is null ? null : MembershipMapper.ToDomain(entity);
+    }
+
+    public async Task<List<Membership>> GetActiveByClientAsync(Guid clientId)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var intClientId = GuidToInt(clientId);
+
+        var entities = await _context.Memberships
+            .Where(m => m.ClientId == intClientId && m.IsActive && m.EndDate >= today)
+            .ToListAsync();
+
+        return entities.Select(MembershipMapper.ToDomain).ToList();
+    }
+
+    public async Task<bool> HasActiveMembershipAsync(Guid clientId)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var intClientId = GuidToInt(clientId);
+
+        return await _context.Memberships
+            .AnyAsync(m => m.ClientId == intClientId && m.IsActive && m.EndDate >= today);
+    }
+
     public async Task AddAsync(Membership membership)
     {
-        await context.Memberships.AddAsync(membership);
-    }
-    
-    public async Task<List<Membership>> GetActiveMembershipsByClientAsync(int clientId)
-    {
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        return await context.Memberships
-            .Where(m => m.ClientId == clientId && m.IsActive == true && m.EndDate > today)
-            .ToListAsync();
+        var entity = MembershipMapper.ToEntity(membership);
+        await _context.Memberships.AddAsync(entity);
     }
 
-    public async Task MarkAsActiveMembershipAsync(int membershipId)
+    public async Task UpdateAsync(Membership membership)
     {
-        await context.Memberships
-            .Where(m => m.MembershipId == membershipId)
-            .ExecuteUpdateAsync(s => s.SetProperty(m => m.IsActive, true));
+        var entity = MembershipMapper.ToEntity(membership);
+        _context.Memberships.Update(entity);
+        await Task.CompletedTask;
     }
 
-    public async Task<List<Membership>> GetAllActiveMembershipReferencedOnMembershipPlan(int planId)
+    private static int GuidToInt(Guid id)
     {
-        return await context.Memberships
-            .Where(m => m.PlanId == planId && m.IsActive == true)
-            .ToListAsync();
-    }
-    
-    public async Task<Membership?> GetPendingMembershipByClientAsync(int clientId)
-    {
-        return await context.Memberships
-            .Where(m => m.ClientId == clientId && m.IsActive == false)
-            .OrderByDescending(m => m.StartDate) 
-            .FirstOrDefaultAsync();
+        var bytes = id.ToByteArray();
+        return bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
     }
 }
