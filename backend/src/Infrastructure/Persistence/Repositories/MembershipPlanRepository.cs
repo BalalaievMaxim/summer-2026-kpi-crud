@@ -1,40 +1,54 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Infrastructure.Persistence;
+using GymManagement.Domain.Memberships;
+using GymManagement.Infrastructure.Persistence.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class MembershipPlanRepository(GymManagementContext context) : IMembershipPlanRepository
+public class MembershipPlanRepository : IMembershipPlanRepository
 {
-    public async Task AddAsync(MembershipPlan membershipPlan)
+    private readonly GymManagementContext _context;
+
+    public MembershipPlanRepository(GymManagementContext context)
     {
-        await context.Membershipplans.AddAsync(membershipPlan);
-    }
-    
-    public async Task<MembershipPlan?> GetMembershipPlanByIdAsync(int planId)
-    {
-        return await context.Membershipplans
-            .FirstOrDefaultAsync(m => m.PlanId == planId);
+        _context = context;
     }
 
-    public async Task DeleteMembershipPlanAsync(int planId)
+    public async Task<MembershipPlan?> GetByIdAsync(Guid id)
     {
-        await context.Membershipplans
-            .Where(m => m.PlanId == planId)
-            .ExecuteDeleteAsync();
+        var intId = GuidToInt(id);
+        var entity = await _context.Membershipplans
+            .Include(p => p.PlanAccesses)
+            .FirstOrDefaultAsync(p => p.PlanId == intId);
+
+        return entity is null ? null : MembershipPlanMapper.ToDomain(entity);
     }
-    
-    public async Task<List<MembershipPlan>> GetPlansAsync(decimal? min, decimal? max)
+
+    public async Task<List<MembershipPlan>> GetAllAsync()
     {
-        var query = context.Membershipplans.AsNoTracking().AsQueryable();
+        var entities = await _context.Membershipplans
+            .Include(p => p.PlanAccesses)
+            .ToListAsync();
 
-        if (min.HasValue) 
-            query = query.Where(p => p.Price >= min.Value);
-        
-        if (max.HasValue) 
-            query = query.Where(p => p.Price <= max.Value);
+        return entities.Select(MembershipPlanMapper.ToDomain).ToList();
+    }
 
-        return await query.OrderBy(p => p.Price).ToListAsync();
+    public async Task AddAsync(MembershipPlan plan)
+    {
+        var entity = MembershipPlanMapper.ToEntity(plan);
+        await _context.Membershipplans.AddAsync(entity);
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var intId = GuidToInt(id);
+        var entity = await _context.Membershipplans.FindAsync(intId);
+        if (entity is not null)
+            _context.Membershipplans.Remove(entity);
+    }
+
+    private static int GuidToInt(Guid id)
+    {
+        var bytes = id.ToByteArray();
+        return bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
     }
 }
