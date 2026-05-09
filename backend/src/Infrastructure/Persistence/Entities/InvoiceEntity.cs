@@ -11,5 +11,5 @@ public class InvoiceEntity
     public string? PaymentMethod { get; set; }
     public string? Notes { get; set; }
 
-    public ClientEntity Client { get; set; } = null!;
+    public Client Client { get; set; } = null!;
 }
