@@ -1,10 +1,13 @@
-using GymManagement.Domain.Memberships;
+using DomainMembershipPlan = GymManagement.Domain.Memberships.MembershipPlan;
+using DomainIMembershipPlanRepository = GymManagement.Domain.Memberships.IMembershipPlanRepository;
+using EfMembershipPlan = GymManagement.Infrastructure.Persistence.Entities.MembershipPlan;
+using OldIMembershipPlanRepository = GymManagement.Infrastructure.Persistence.Repositories.Interfaces.IMembershipPlanRepository;
 using GymManagement.Infrastructure.Persistence.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class MembershipPlanRepository : IMembershipPlanRepository
+public class MembershipPlanRepository : OldIMembershipPlanRepository, DomainIMembershipPlanRepository
 {
     private readonly GymManagementContext _context;
 
@@ -13,26 +16,53 @@ public class MembershipPlanRepository : IMembershipPlanRepository
         _context = context;
     }
 
-    public async Task<MembershipPlan?> GetByIdAsync(Guid id)
+    // ── старий інтерфейс ──
+    public async Task AddAsync(EfMembershipPlan membershipPlan)
+    {
+        await _context.Membershipplans.AddAsync(membershipPlan);
+    }
+
+    public async Task<EfMembershipPlan?> GetMembershipPlanByIdAsync(int planId)
+    {
+        return await _context.Membershipplans
+            .Include(p => p.PlanAccesses)
+            .FirstOrDefaultAsync(p => p.PlanId == planId);
+    }
+
+    public async Task DeleteMembershipPlanAsync(int planId)
+    {
+        var entity = await _context.Membershipplans.FindAsync(planId);
+        if (entity is not null)
+            _context.Membershipplans.Remove(entity);
+    }
+
+    public async Task<List<EfMembershipPlan>> GetPlansAsync(decimal? min, decimal? max)
+    {
+        var query = _context.Membershipplans.AsQueryable();
+        if (min.HasValue) query = query.Where(p => p.Price >= min.Value);
+        if (max.HasValue) query = query.Where(p => p.Price <= max.Value);
+        return await query.ToListAsync();
+    }
+
+    // ── новий доменний інтерфейс ──
+    public async Task<DomainMembershipPlan?> GetByIdAsync(Guid id)
     {
         var intId = GuidToInt(id);
         var entity = await _context.Membershipplans
             .Include(p => p.PlanAccesses)
             .FirstOrDefaultAsync(p => p.PlanId == intId);
-
         return entity is null ? null : MembershipPlanMapper.ToDomain(entity);
     }
 
-    public async Task<List<MembershipPlan>> GetAllAsync()
+    public async Task<List<DomainMembershipPlan>> GetAllAsync()
     {
         var entities = await _context.Membershipplans
             .Include(p => p.PlanAccesses)
             .ToListAsync();
-
         return entities.Select(MembershipPlanMapper.ToDomain).ToList();
     }
 
-    public async Task AddAsync(MembershipPlan plan)
+    public async Task AddAsync(DomainMembershipPlan plan)
     {
         var entity = MembershipPlanMapper.ToEntity(plan);
         await _context.Membershipplans.AddAsync(entity);

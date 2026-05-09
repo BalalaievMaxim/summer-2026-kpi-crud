@@ -1,17 +1,18 @@
+using DomainInvoice = GymManagement.Domain.Billing.Invoice;
+using InvoiceEntity = GymManagement.Infrastructure.Persistence.Entities.Invoice;
 using GymManagement.Domain.Billing;
 using GymManagement.Domain.Shared.ValueObjects;
-using GymManagement.Infrastructure.Persistence.Entities;
 
 namespace GymManagement.Infrastructure.Persistence.Mappers;
 
 public static class InvoiceMapper
 {
-    public static Invoice ToDomain(InvoiceEntity e)
+    public static DomainInvoice ToDomain(InvoiceEntity e)
     {
         var clientId = IntToGuid(e.ClientId);
-        var amount = Money.Create(e.Amount, e.Currency);
+        var amount = Money.Create(e.Amount, "UAH");
 
-        var invoice = Invoice.Create(clientId, amount, e.Notes);
+        var invoice = DomainInvoice.Create(clientId, amount, e.Notes);
 
         if (e.Status == "Paid" && e.PaymentMethod is not null)
         {
@@ -30,16 +31,13 @@ public static class InvoiceMapper
         return invoice;
     }
 
-    public static InvoiceEntity ToEntity(Invoice d)
+    public static InvoiceEntity ToEntity(DomainInvoice d)
     {
         return new InvoiceEntity
         {
             InvoiceId = GuidToInt(d.Id),
             ClientId = GuidToInt(d.ClientId),
             Amount = d.Amount.Amount,
-            Currency = d.Amount.Currency,
-            Date = DateOnly.FromDateTime(d.Date.DateTime),
-            Status = d.Status.ToString(),
             PaymentMethod = d.Method?.ToString(),
             Notes = d.Notes
         };

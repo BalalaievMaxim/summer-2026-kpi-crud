@@ -8,6 +8,6 @@ public class MembershipPlanEntity
     public decimal Price { get; set; }
     public string Currency { get; set; } = "UAH";
 
-    public ICollection<PlanAccessEntity> PlanAccesses { get; set; } = new List<PlanAccessEntity>();
-    public ICollection<MembershipEntity> Memberships { get; set; } = new List<MembershipEntity>();
+    public ICollection<PlanAccess> PlanAccesses { get; set; } = new List<PlanAccess>();
+    public ICollection<Membership> Memberships { get; set; } = new List<Membership>();
 }

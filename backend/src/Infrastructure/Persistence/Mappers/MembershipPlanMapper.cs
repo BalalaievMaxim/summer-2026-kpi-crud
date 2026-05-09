@@ -1,28 +1,27 @@
-using GymManagement.Domain.Memberships;
+using DomainMembershipPlan = GymManagement.Domain.Memberships.MembershipPlan;
+using MembershipPlanEntity = GymManagement.Infrastructure.Persistence.Entities.MembershipPlan;
 using GymManagement.Domain.Shared.ValueObjects;
-using GymManagement.Infrastructure.Persistence.Entities;
 
 namespace GymManagement.Infrastructure.Persistence.Mappers;
 
 public static class MembershipPlanMapper
 {
-    public static MembershipPlan ToDomain(MembershipPlanEntity e)
+    public static DomainMembershipPlan ToDomain(MembershipPlanEntity e)
     {
-        var price = Money.Create(e.Price, e.Currency);
+        var price = Money.Create(e.Price, "UAH");
         var zones = e.PlanAccesses.Select(pa => IntToGuid(pa.ZoneId));
 
-        return MembershipPlan.Create(e.Name, e.DurationMonths, price, zones);
+        return DomainMembershipPlan.Create(e.Name, e.DurationMonths, price, zones);
     }
 
-    public static MembershipPlanEntity ToEntity(MembershipPlan d)
+    public static MembershipPlanEntity ToEntity(DomainMembershipPlan d)
     {
         return new MembershipPlanEntity
         {
             PlanId = GuidToInt(d.Id),
             Name = d.Name,
             DurationMonths = d.DurationMonths,
-            Price = d.Price.Amount,
-            Currency = d.Price.Currency
+            Price = d.Price.Amount
         };
     }
 

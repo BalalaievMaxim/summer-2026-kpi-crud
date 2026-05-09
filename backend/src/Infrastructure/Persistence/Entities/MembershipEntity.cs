@@ -9,6 +9,6 @@ public class MembershipEntity
     public DateOnly EndDate { get; set; }
     public bool IsActive { get; set; } = true;
 
-    public ClientEntity Client { get; set; } = null!;
-    public MembershipPlanEntity MembershipPlan { get; set; } = null!;
+    public Client Client { get; set; } = null!;
+    public MembershipPlan MembershipPlan { get; set; } = null!;
 }

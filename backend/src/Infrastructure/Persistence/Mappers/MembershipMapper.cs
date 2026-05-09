@@ -1,21 +1,20 @@
-using GymManagement.Domain.Memberships;
-using GymManagement.Domain.Shared.ValueObjects;
-using GymManagement.Infrastructure.Persistence.Entities;
+using DomainMembership = GymManagement.Domain.Memberships.Membership;
+using MembershipEntity = GymManagement.Infrastructure.Persistence.Entities.Membership;
 
 namespace GymManagement.Infrastructure.Persistence.Mappers;
 
 public static class MembershipMapper
 {
-    public static Membership ToDomain(MembershipEntity e)
+    public static DomainMembership ToDomain(MembershipEntity e)
     {
         var clientId = IntToGuid(e.ClientId);
         var planId = IntToGuid(e.PlanId);
         var months = MonthsBetween(e.StartDate, e.EndDate);
 
-        return Membership.Create(clientId, planId, e.StartDate, months);
+        return DomainMembership.Create(clientId, planId, e.StartDate, months);
     }
 
-    public static MembershipEntity ToEntity(Membership d)
+    public static MembershipEntity ToEntity(DomainMembership d)
     {
         return new MembershipEntity
         {
