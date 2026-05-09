@@ -1,60 +1,103 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Entities.Enums;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Infrastructure.Persistence;
+using DomainInvoice = GymManagement.Domain.Billing.Invoice;
+using DomainIInvoiceRepository = GymManagement.Domain.Billing.IInvoiceRepository;
+using EfInvoice = GymManagement.Infrastructure.Persistence.Entities.Invoice;
+using OldIInvoiceRepository = GymManagement.Infrastructure.Persistence.Repositories.Interfaces.IInvoiceRepository;
+using GymManagement.Domain.Billing;
 using GymManagement.Infrastructure.DTOs;
+using GymManagement.Infrastructure.Persistence.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class InvoiceRepository(GymManagementContext context) : IInvoiceRepository
+public class InvoiceRepository : OldIInvoiceRepository, DomainIInvoiceRepository
 {
-    public async Task<List<Invoice>> GetAllClientInvoicesAsync(int clientId)
+    private readonly GymManagementContext _context;
+
+    public InvoiceRepository(GymManagementContext context)
     {
-        return await context.Invoices
+        _context = context;
+    }
+
+    // ── старий інтерфейс ──
+    public async Task<List<EfInvoice>> GetAllClientInvoicesAsync(int clientId)
+    {
+        return await _context.Invoices
             .Where(i => i.ClientId == clientId)
-            .AsNoTracking()
             .ToListAsync();
     }
 
-    public async Task<List<Invoice>> GetPendingInvoicesAsync(int clientId)
+    public async Task<List<EfInvoice>> GetPendingInvoicesAsync(int clientId)
     {
-        var pendingStatus = nameof(PaymentStatus.Pending).ToLower();
-        return await context.Invoices
-            .Where(i => i.ClientId == clientId && i.Status == pendingStatus)
-            .AsNoTracking()
+        return await _context.Invoices
+            .Where(i => i.ClientId == clientId && i.Status == "pending")
             .ToListAsync();
     }
 
-    public async Task<Invoice?> GetInvoiceAsync(int invoiceId)
+    public async Task<EfInvoice?> GetInvoiceAsync(int invoiceId)
     {
-        return await context.Invoices
-            .Include(i => i.Client)
-            .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId);
+        return await _context.Invoices.FindAsync(invoiceId);
     }
 
-    public async Task AddAsync(Invoice invoice)
+    public async Task AddAsync(EfInvoice invoice)
     {
-        await context.Invoices.AddAsync(invoice);
+        await _context.Invoices.AddAsync(invoice);
     }
 
     public async Task<List<TotalMembershipRevenueDto>> GetMonthlyRevenueByPlanAsync()
     {
-        var sql = @"
-        SELECT
-            TO_CHAR(i.date, 'YYYY-MM') AS ""RevenueMonth"",
-            mp.name AS ""PlanName"",
-            SUM(i.amount) AS ""TotalRevenue""
-        FROM invoice i
-        JOIN membership m ON i.client_id = m.client_id
-            AND i.date BETWEEN m.start_date AND m.end_date
-        JOIN membershipplan mp ON m.plan_id = mp.plan_id
-        WHERE i.status = 'paid'
-        GROUP BY TO_CHAR(i.date, 'YYYY-MM'), mp.name
-        ORDER BY ""RevenueMonth"" DESC, ""TotalRevenue"" DESC";
-        
-        return await context.Database
-            .SqlQuery<TotalMembershipRevenueDto>(System.Runtime.CompilerServices.FormattableStringFactory.Create(sql))
+        return await _context.Invoices
+            .Where(i => i.Status == "paid")
+            .Join(_context.Memberships,
+                i => i.ClientId,
+                m => m.ClientId,
+                (i, m) => new { Invoice = i, Membership = m })
+            .Join(_context.Membershipplans,
+                im => im.Membership.PlanId,
+                p => p.PlanId,
+                (im, p) => new { im.Invoice, Plan = p })
+            .GroupBy(x => new { x.Invoice.Date.Month, x.Plan.Name })
+            .Select(g => new TotalMembershipRevenueDto
+            {
+                RevenueMonth = g.Key.Month.ToString(),
+                PlanName = g.Key.Name,
+                TotalRevenue = g.Sum(x => x.Invoice.Amount)
+            })
             .ToListAsync();
+    }
+
+    // ── новий доменний інтерфейс ──
+    public async Task<DomainInvoice?> GetByIdAsync(Guid id)
+    {
+        var intId = GuidToInt(id);
+        var entity = await _context.Invoices.FindAsync(intId);
+        return entity is null ? null : InvoiceMapper.ToDomain(entity);
+    }
+
+    public async Task<List<DomainInvoice>> GetByClientAsync(Guid clientId)
+    {
+        var intClientId = GuidToInt(clientId);
+        var entities = await _context.Invoices
+            .Where(i => i.ClientId == intClientId)
+            .ToListAsync();
+        return entities.Select(InvoiceMapper.ToDomain).ToList();
+    }
+
+    public async Task AddAsync(DomainInvoice invoice)
+    {
+        var entity = InvoiceMapper.ToEntity(invoice);
+        await _context.Invoices.AddAsync(entity);
+    }
+
+    public async Task UpdateAsync(DomainInvoice invoice)
+    {
+        var entity = InvoiceMapper.ToEntity(invoice);
+        _context.Invoices.Update(entity);
+        await Task.CompletedTask;
+    }
+
+    private static int GuidToInt(Guid id)
+    {
+        var bytes = id.ToByteArray();
+        return bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
     }
 }
