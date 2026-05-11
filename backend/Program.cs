@@ -2,8 +2,10 @@ using System.Text.Json.Serialization;
 using System.Text;
 using GymManagement.Application.Services;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Classes;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Coaches;
+using GymManagement.Domain.Enrollments;
 using GymManagement.Domain.Ports;
 using GymManagement.Infrastructure.Middleware;
 using GymManagement.Infrastructure.Security;
@@ -35,6 +37,9 @@ builder.Services.AddScoped<IClientRepository>(sp => sp.GetRequiredService<Client
 builder.Services.AddScoped<IClientAnalyticsRepository>(sp => sp.GetRequiredService<ClientRepository>());
 
 builder.Services.AddScoped<ICoachRepository, CoachRepository>();
+
+builder.Services.AddScoped<ClassFactory>();
+builder.Services.AddScoped<EnrollmentFactory>();
 
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<ICoachService, CoachService>();

@@ -10,6 +10,7 @@ public sealed class ClassService(
     IClassScheduleRepository classRepository,
     ICoachRepository coachRepository,
     IClassTypeRepositoryPort classTypeRepository,
+    ClassFactory classFactory,
     IUnitOfWork unitOfWork) : IClassService
 {
     public async Task<GymClassDetails> CreateClassAsync(
@@ -22,21 +23,12 @@ public sealed class ClassService(
         if (!await classTypeRepository.ExistsAsync(classTypeId))
             throw new Application.Exceptions.NotFoundException($"ClassType with ID {classTypeId} not found.");
 
-        var coach = await coachRepository.GetByIdAsync(coachId)
-            ?? throw new Application.Exceptions.NotFoundException($"Coach with ID {coachId} not found.");
-
-        if (startTime >= endTime)
-            throw new InvalidOperationException("Start time must be before end time.");
-
-        if (startTime < DateTime.UtcNow)
-            throw new InvalidOperationException("Cannot schedule a class in the past.");
-
-        var hasConflict = await classRepository.HasTimeConflictForCoachAsync(
-            coachId, startTime, endTime);
-
-        if (hasConflict)
-            throw new InvalidOperationException(
-                $"Coach {coach.Name.Value} already has a class scheduled during this time.");
+        await classFactory.CreateAsync(
+            classTypeId,
+            coachId,
+            new DateTimeOffset(DateTime.SpecifyKind(startTime, DateTimeKind.Utc)),
+            new DateTimeOffset(DateTime.SpecifyKind(endTime, DateTimeKind.Utc)),
+            capacity);
 
         return await classRepository.CreateAsync(classTypeId, coachId, startTime, endTime, capacity);
     }

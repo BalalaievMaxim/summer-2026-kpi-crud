@@ -1,8 +1,10 @@
 using FluentAssertions;
 using GymManagement.Application.Services;
 using GymManagement.Domain.Classes;
+using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Coaches;
 using GymManagement.Domain.Ports;
+using GymManagement.Domain.Shared.ValueObjects;
 using Moq;
 using DomainCoach = GymManagement.Domain.Coaches.Coach;
 
@@ -23,15 +25,22 @@ public sealed class ClassServiceTests
         _classTypeRepoMock = new Mock<IClassTypeRepositoryPort>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
 
+        var factory = new ClassFactory(_classRepoMock.Object, _coachRepoMock.Object);
+
         _service = new ClassService(
             _classRepoMock.Object,
             _coachRepoMock.Object,
             _classTypeRepoMock.Object,
+            factory,
             _unitOfWorkMock.Object);
     }
 
     private static GymClassDetails Details(int id, int coachId, DateTime start, DateTime end, int capacity, params int[] enrollmentIds)
         => new(id, 1, "type", coachId, "coach", start, end, capacity, enrollmentIds);
+
+    private void SetupCoach(int coachId, string name = "Test Coach")
+        => _coachRepoMock.Setup(r => r.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DomainCoach.Reconstitute(coachId, name, "coach@test.com", "Yoga", "pass1234"));
 
     [Fact]
     public async Task CreateClass_ValidData_Should_ReturnClass()
@@ -41,10 +50,9 @@ public sealed class ClassServiceTests
         var startTime = DateTime.UtcNow.AddDays(1);
         var endTime = startTime.AddHours(1);
 
-        _classTypeRepoMock.Setup(repo => repo.ExistsAsync(classTypeId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _coachRepoMock.Setup(repo => repo.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(DomainCoach.Reconstitute(coachId, "Test Coach", "coach@test.com", "Yoga", "pass1234"));
-        _classRepoMock.Setup(repo => repo.HasTimeConflictForCoachAsync(coachId, startTime, endTime, null, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _classTypeRepoMock.Setup(r => r.ExistsAsync(classTypeId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        SetupCoach(coachId);
+        _classRepoMock.Setup(r => r.HasOverlappingClassAsync(coachId, It.IsAny<TimeRange>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         var expected = Details(99, coachId, startTime, endTime, 10);
         _classRepoMock.Setup(r => r.CreateAsync(classTypeId, coachId, startTime, endTime, 10, It.IsAny<CancellationToken>()))
@@ -53,48 +61,42 @@ public sealed class ClassServiceTests
         var result = await _service.CreateClassAsync(classTypeId, coachId, startTime, endTime, 10);
 
         result.Should().Be(expected);
-        _classRepoMock.Verify(repo => repo.CreateAsync(classTypeId, coachId, startTime, endTime, 10, It.IsAny<CancellationToken>()), Times.Once);
-        _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _classRepoMock.Verify(r => r.CreateAsync(classTypeId, coachId, startTime, endTime, 10, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task CreateClass_StartTimeInPast_Should_ThrowException()
+    public async Task CreateClass_StartTimeInPast_Should_ThrowDomainError()
     {
         var classTypeId = 1;
         var coachId = 1;
         var startTime = DateTime.UtcNow.AddMinutes(-10);
         var endTime = DateTime.UtcNow.AddHours(1);
 
-        _classTypeRepoMock.Setup(repo => repo.ExistsAsync(classTypeId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _coachRepoMock.Setup(repo => repo.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(DomainCoach.Reconstitute(coachId, "Test Coach", "coach@test.com", "Yoga", "pass1234"));
+        _classTypeRepoMock.Setup(r => r.ExistsAsync(classTypeId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        SetupCoach(coachId);
 
         var act = async () => await _service.CreateClassAsync(classTypeId, coachId, startTime, endTime, 10);
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Cannot schedule a class in the past.");
+        await act.Should().ThrowAsync<ClassInPastError>();
 
-        _classRepoMock.Verify(repo => repo.CreateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _classRepoMock.Verify(r => r.CreateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task CreateClass_CoachHasConflict_Should_ThrowException()
+    public async Task CreateClass_CoachHasConflict_Should_ThrowDomainError()
     {
         var classTypeId = 1;
         var coachId = 1;
         var startTime = DateTime.UtcNow.AddDays(1);
         var endTime = startTime.AddHours(1);
 
-        _classTypeRepoMock.Setup(repo => repo.ExistsAsync(classTypeId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _coachRepoMock.Setup(repo => repo.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(DomainCoach.Reconstitute(coachId, "John Doe", "john@test.com", "Yoga", "pass1234"));
-
-        _classRepoMock.Setup(repo => repo.HasTimeConflictForCoachAsync(coachId, startTime, endTime, null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _classTypeRepoMock.Setup(r => r.ExistsAsync(classTypeId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        SetupCoach(coachId, "John Doe");
+        _classRepoMock.Setup(r => r.HasOverlappingClassAsync(coachId, It.IsAny<TimeRange>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var act = async () => await _service.CreateClassAsync(classTypeId, coachId, startTime, endTime, 10);
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Coach John Doe already has a class scheduled during this time.");
+        await act.Should().ThrowAsync<CoachScheduleConflictError>();
     }
 
     [Fact]
@@ -103,7 +105,7 @@ public sealed class ClassServiceTests
         var classId = 1;
         var session = Details(classId, 1, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(1).AddHours(1), 10, 5);
 
-        _classRepoMock.Setup(repo => repo.GetByIdAsync(classId, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        _classRepoMock.Setup(r => r.GetByIdAsync(classId, It.IsAny<CancellationToken>())).ReturnsAsync(session);
 
         var act = async () => await _service.DeleteClassAsync(classId);
 
@@ -167,8 +169,7 @@ public sealed class ClassServiceTests
         var startDate = DateTime.UtcNow;
         var endDate = startDate.AddDays(7);
 
-        _coachRepoMock.Setup(r => r.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(DomainCoach.Reconstitute(coachId, "Іван", "ivan@test.com", "Yoga", "pass1234"));
+        SetupCoach(coachId, "Іван");
 
         var classes = new List<GymClassDetails>
         {
