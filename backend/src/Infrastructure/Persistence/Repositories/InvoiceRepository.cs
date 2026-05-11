@@ -29,32 +29,40 @@ public sealed class InvoiceRepository(GymManagementContext context) : IInvoiceRe
         return list.Select(ToRecord).ToList();
     }
 
-    public async Task<InvoiceRecord?> GetInvoiceAsync(int invoiceId, CancellationToken cancellationToken = default)
+    public async Task<Invoice?> GetByIdAsync(int invoiceId, CancellationToken cancellationToken = default)
     {
         var entity = await context.Invoices.FindAsync([invoiceId], cancellationToken);
-        return entity is null ? null : ToRecord(entity);
+        return entity is null ? null : ToAggregate(entity);
     }
 
-    public async Task AddAsync(InvoiceRecord invoice, CancellationToken cancellationToken = default)
+    public async Task<int> AddAsync(Invoice invoice, CancellationToken cancellationToken = default)
     {
         var entity = new E.Invoice
         {
             ClientId = invoice.ClientId,
             Amount = invoice.Amount,
             Date = invoice.Date,
-            Status = invoice.Status,
-            PaymentMethod = invoice.PaymentMethod,
+            Status = ToDbStatus(invoice.Status),
+            PaymentMethod = ToDbMethod(invoice.Method),
             Notes = invoice.Notes
         };
 
         await context.Invoices.AddAsync(entity, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return entity.InvoiceId;
     }
 
-    public async Task UpdateStatusAsync(int invoiceId, string status, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Invoice invoice, CancellationToken cancellationToken = default)
     {
-        await context.Invoices
-            .Where(i => i.InvoiceId == invoiceId)
-            .ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, status), cancellationToken);
+        var entity = await context.Invoices.FindAsync([invoice.Id], cancellationToken)
+            ?? throw new InvalidOperationException($"Invoice {invoice.Id} not found in persistence.");
+
+        entity.Status = ToDbStatus(invoice.Status);
+        entity.PaymentMethod = ToDbMethod(invoice.Method);
+        entity.Notes = invoice.Notes;
+        entity.Amount = invoice.Amount;
+        entity.Date = invoice.Date;
     }
 
     public async Task<List<TotalMembershipRevenueRow>> GetMonthlyRevenueByPlanAsync(
@@ -86,4 +94,48 @@ public sealed class InvoiceRepository(GymManagementContext context) : IInvoiceRe
 
     private static InvoiceRecord ToRecord(E.Invoice i) =>
         new(i.InvoiceId, i.ClientId, i.Amount, i.Date, i.Status, i.PaymentMethod ?? string.Empty, i.Notes);
+
+    private static Invoice ToAggregate(E.Invoice i) =>
+        Invoice.Reconstitute(
+            id: i.InvoiceId,
+            clientId: i.ClientId,
+            amount: i.Amount,
+            date: i.Date,
+            status: ParseStatus(i.Status),
+            method: ParseMethod(i.PaymentMethod),
+            notes: i.Notes);
+
+    private static string ToDbStatus(PaymentStatus status) => status switch
+    {
+        PaymentStatus.Pending => "pending",
+        PaymentStatus.Paid => "paid",
+        PaymentStatus.Overdue => "overdue",
+        PaymentStatus.Cancelled => "cancelled",
+        _ => "pending"
+    };
+
+    private static PaymentStatus ParseStatus(string raw) => raw?.ToLowerInvariant() switch
+    {
+        "paid" => PaymentStatus.Paid,
+        "overdue" => PaymentStatus.Overdue,
+        "cancelled" => PaymentStatus.Cancelled,
+        _ => PaymentStatus.Pending
+    };
+
+    private static string ToDbMethod(PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => "cash",
+        PaymentMethod.Card => "card",
+        PaymentMethod.BankTransfer => "banktransfer",
+        PaymentMethod.Online => "online",
+        _ => "cash"
+    };
+
+    private static PaymentMethod ParseMethod(string? raw) => raw?.ToLowerInvariant() switch
+    {
+        "card" => PaymentMethod.Card,
+        "banktransfer" => PaymentMethod.BankTransfer,
+        "online" => PaymentMethod.Online,
+        _ => PaymentMethod.Cash
+    };
 }
