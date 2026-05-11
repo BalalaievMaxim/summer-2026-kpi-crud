@@ -1,4 +1,4 @@
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Domain.Ports;
 using GymManagement.Infrastructure.Persistence;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;

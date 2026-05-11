@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using GymManagement.Infrastructure.Persistence.Entities.Enums;
+using GymManagement.Domain.Billing;
 
 namespace GymManagement.Application.DTOs;
 

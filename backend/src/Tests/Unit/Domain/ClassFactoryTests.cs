@@ -2,6 +2,7 @@ using FluentAssertions;
 using GymManagement.Domain.Classes;
 using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Coaches;
+using GymManagement.Domain.Ports;
 using GymManagement.Domain.Shared.ValueObjects;
 using Moq;
 
@@ -9,7 +10,7 @@ namespace GymManagement.Tests.Unit.Domain;
 
 public class ClassFactoryTests
 {
-    private readonly Mock<IClassRepository> _classRepoMock = new();
+    private readonly Mock<IClassScheduleRepository> _classRepoMock = new();
     private readonly Mock<ICoachRepository> _coachRepoMock = new();
     private readonly ClassFactory _factory;
 
@@ -31,7 +32,7 @@ public class ClassFactoryTests
     private void SetupNoScheduleConflict()
     {
         _classRepoMock
-            .Setup(r => r.HasOverlappingClass(
+            .Setup(r => r.HasOverlappingClassAsync(
                 It.IsAny<int>(), It.IsAny<TimeRange>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
     }
@@ -39,7 +40,7 @@ public class ClassFactoryTests
     private void SetupScheduleConflict()
     {
         _classRepoMock
-            .Setup(r => r.HasOverlappingClass(
+            .Setup(r => r.HasOverlappingClassAsync(
                 It.IsAny<int>(), It.IsAny<TimeRange>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
     }

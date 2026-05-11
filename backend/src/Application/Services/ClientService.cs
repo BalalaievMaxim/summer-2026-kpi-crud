@@ -2,13 +2,12 @@ using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Clients.Errors;
-using GymManagement.Infrastructure.DTOs;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using IClientAnalyticsRepository = GymManagement.Infrastructure.Persistence.Repositories.Interfaces.IClientAnalyticsRepository;
+using GymManagement.Domain.Ports;
+using GymManagement.Domain.Queries;
 
 namespace GymManagement.Application.Services;
 
-public class ClientService(
+public sealed class ClientService(
     IClientRepository clientRepository,
     IClientAnalyticsRepository analyticsRepository,
     IUnitOfWork unitOfWork) : IClientService
@@ -19,7 +18,9 @@ public class ClientService(
             throw new ClientEmailAlreadyExistsError(dto.Email);
 
         var client = Client.Create(dto.Name, dto.Email, dto.Phone, dto.Password);
-        return await clientRepository.AddAsync(client);
+        var created = await clientRepository.AddAsync(client);
+        await unitOfWork.SaveChangesAsync();
+        return created;
     }
 
     public async Task<Client> LoginClientAsync(string email, string password)
@@ -71,6 +72,6 @@ public class ClientService(
     public Task<IEnumerable<Client>> SearchClientsAsync(string searchTerm)
         => clientRepository.SearchAsync(searchTerm);
 
-    public Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync()
+    public Task<List<ClientActivityRow>> GetClientActivityAnalyticsAsync()
         => analyticsRepository.GetClientActivityAnalyticsAsync();
 }

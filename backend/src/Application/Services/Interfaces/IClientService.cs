@@ -1,6 +1,6 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Domain.Clients;
-using GymManagement.Infrastructure.DTOs;
+using GymManagement.Domain.Queries;
 
 namespace GymManagement.Application.Services.Interfaces;
 
@@ -12,5 +12,5 @@ public interface IClientService
     Task DeleteClientAsync(int clientId);
     Task<Client?> GetByIdAsync(int clientId);
     Task<IEnumerable<Client>> SearchClientsAsync(string searchTerm);
-    Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync();
+    Task<List<ClientActivityRow>> GetClientActivityAnalyticsAsync();
 }

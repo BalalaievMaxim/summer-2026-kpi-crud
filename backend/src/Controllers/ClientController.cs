@@ -1,8 +1,10 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Ports;
 using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Shared;
-using GymManagement.Infrastructure.DTOs;
+using GymManagement.Domain.Queries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,9 +12,10 @@ namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/clients")]
-public class ClientController(IClientService clientService) : ControllerBase
+public class ClientController(IClientService clientService, ITokenService tokenService) : ControllerBase
 {
     [HttpPost("register")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] CreateClientDto dto)
@@ -20,18 +23,21 @@ public class ClientController(IClientService clientService) : ControllerBase
         try
         {
             var client = await clientService.RegisterClientAsync(dto);
+            var token = tokenService.CreateToken(client.Id, client.Email.Value, "Client");
             return CreatedAtAction(nameof(Register), new { id = client.Id }, new
             {
-                id = client.Id,
+                clientId = client.Id,
                 name = client.Name.Value,
                 email = client.Email.Value,
-                phone = client.Phone.Value
+                phone = client.Phone.Value,
+                token
             });
         }
         catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
@@ -39,13 +45,15 @@ public class ClientController(IClientService clientService) : ControllerBase
         try
         {
             var client = await clientService.LoginClientAsync(dto.Email, dto.Password);
-            return Ok(new { id = client.Id, name = client.Name.Value, email = client.Email.Value });
+            var token = tokenService.CreateToken(client.Id, client.Email.Value, "Client");
+            return Ok(new { clientId = client.Id, name = client.Name.Value, email = client.Email.Value, phone = client.Phone.Value, token });
         }
         catch (InvalidCredentialsError ex) { return Unauthorized(new { code = ex.Code, error = ex.Message }); }
         catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
     }
 
     [HttpPut("{clientId}")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -61,6 +69,7 @@ public class ClientController(IClientService clientService) : ControllerBase
     }
 
     [HttpDelete("{clientId}")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteClient(int clientId)
@@ -75,6 +84,7 @@ public class ClientController(IClientService clientService) : ControllerBase
     }
 
     [HttpGet("search")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SearchClients([FromQuery] string searchTerm)
@@ -87,6 +97,7 @@ public class ClientController(IClientService clientService) : ControllerBase
     }
 
     [HttpGet("{clientId}/history")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetClientHistory(int clientId)
@@ -97,8 +108,9 @@ public class ClientController(IClientService clientService) : ControllerBase
     }
 
     [HttpGet("analytics/activity")]
-    [ProducesResponseType(typeof(List<ClientActivityDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<ClientActivityDto>>> GetClientActivityAnalytics()
+    [Authorize]
+    [ProducesResponseType(typeof(List<ClientActivityRow>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<ClientActivityRow>>> GetClientActivityAnalytics()
     {
         var analytics = await clientService.GetClientActivityAnalyticsAsync();
         return Ok(analytics);

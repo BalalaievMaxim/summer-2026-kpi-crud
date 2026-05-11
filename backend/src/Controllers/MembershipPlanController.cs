@@ -1,19 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using GymManagement.Application.Services;
-using GymManagement.Infrastructure.DTOs;
 using GymManagement.Application.DTOs;
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Memberships;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.API.Controllers;
 
 [ApiController]
 [Route("/api/v1/membership-plans")]
-public class MembershipPlanController(IMembershipPlanService membershipPlanService) : ControllerBase
+[Authorize]
+public sealed class MembershipPlanController(IMembershipPlanService membershipPlanService) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreatePlan([FromBody] CreateMembershipPlanDto dto)
@@ -27,9 +23,9 @@ public class MembershipPlanController(IMembershipPlanService membershipPlanServi
         {
             return BadRequest(ex.Message);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { error = "Unable to create membership plan." });
         }
     }
 
@@ -43,53 +39,51 @@ public class MembershipPlanController(IMembershipPlanService membershipPlanServi
         }
         catch (InvalidOperationException ex)
         {
-            return Conflict(ex.Message); 
+            return Conflict(ex.Message);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { error = "Unable to delete membership plan." });
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<MembershipPlan>>> GetPlans([FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
+    public async Task<ActionResult<List<MembershipPlanSnapshot>>> GetPlans([FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
     {
         try
         {
             var plans = await membershipPlanService.GetPlansAsync(minPrice, maxPrice);
             return Ok(plans);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { error = "Unable to load membership plans." });
         }
     }
-    
+
     [HttpGet("{id}")]
-    public async Task<ActionResult<MembershipPlan>> GetPlan(int id)
+    public async Task<ActionResult<MembershipPlanSnapshot>> GetPlan(int id)
     {
         try
         {
             var plan = await membershipPlanService.GetPlanByIdAsync(id);
-            
-            if (plan == null)
-            {
+
+            if (plan is null)
                 return NotFound($"Plan with ID {id} not found.");
-            }
-            
+
             return Ok(plan);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { error = "Unable to load membership plan." });
         }
     }
 }

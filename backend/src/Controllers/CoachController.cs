@@ -2,12 +2,14 @@ using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Coaches.Errors;
 using GymManagement.Domain.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CoachController(ICoachService coachService) : ControllerBase
 {
     [HttpGet("{id}")]
@@ -26,6 +28,7 @@ public class CoachController(ICoachService coachService) : ControllerBase
     }
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] CreateCoachDto dto)
     {
         try

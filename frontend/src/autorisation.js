@@ -24,7 +24,7 @@ async function loginUser(email, password) {
         body: JSON.stringify({ email, password }),
     });
     if (!res) throw new Error('Помилка сервера');
-    Auth.setSession(`token-${res.clientId}`, {
+    Auth.setSession(res.token, {
         id: res.clientId, name: res.name, email: res.email, phone: res.phone,
     });
     return res;
@@ -37,7 +37,7 @@ async function registerUser(name, email, password, phone) {
         body: JSON.stringify({ name, email, password, phone }),
     });
     if (!res) throw new Error('Помилка сервера');
-    Auth.setSession(`token-${res.clientId}`, {
+    Auth.setSession(res.token, {
         id: res.clientId, name: res.name, email: res.email, phone: res.phone,
     });
     return res;

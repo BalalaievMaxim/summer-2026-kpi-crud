@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using GymManagement.Infrastructure.Persistence.Entities;
 using Xunit;
+using GymClassDetails = GymManagement.Domain.Classes.GymClassDetails;
 
 namespace GymManagement.Tests.Integration;
 
@@ -54,9 +55,9 @@ public class ClassUpdateTests : BaseIntegrationTest
             updateRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await response.Content.ReadFromJsonAsync<Class>();
+        var updated = await response.Content.ReadFromJsonAsync<GymClassDetails>();
         updated.Should().NotBeNull();
-        updated!.StartTime.Should().BeCloseTo(newStart, TimeSpan.FromSeconds(1));
+        updated!.StartTimeUtc.Should().BeCloseTo(newStart, TimeSpan.FromSeconds(1));
     }
 
     [Fact]

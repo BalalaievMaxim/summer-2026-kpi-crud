@@ -1,157 +1,152 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
-using GymManagement.Infrastructure.DTOs;
 using System.Runtime.CompilerServices;
+using GymManagement.Domain.Classes;
+using GymManagement.Domain.Ports;
+using GymManagement.Domain.Queries;
+using GymManagement.Domain.Shared.ValueObjects;
 using GymManagement.Infrastructure.Persistence;
+using GymManagement.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using E = GymManagement.Infrastructure.Persistence.Entities;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class ClassRepository : IClassRepository
+public sealed class ClassRepository(GymManagementContext context) : IClassScheduleRepository
 {
-    private readonly GymManagementContext _context;
-
-    public ClassRepository(GymManagementContext context)
+    public async Task<GymClassDetails?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        _context = context;
-    }
-
-    public async Task<Class?> GetByIdAsync(int id)
-    {
-        return await _context.Classes
+        var entity = await context.Classes
+            .AsNoTracking()
             .Include(c => c.ClassType)
             .Include(c => c.Coach)
             .Include(c => c.Enrollments)
-                .ThenInclude(e => e.Client)
-            .FirstOrDefaultAsync(c => c.ClassId == id);
+            .FirstOrDefaultAsync(c => c.ClassId == id, cancellationToken);
+        return entity is null ? null : Map(entity);
     }
 
-    public async Task<Class?> GetByIdWithEnrollmentsAsync(int id)
-    {
-        return await _context.Classes
-            .Include(c => c.ClassType)
-            .Include(c => c.Coach)
-            .Include(c => c.Enrollments)
-                .ThenInclude(e => e.Client)
-            .FirstOrDefaultAsync(c => c.ClassId == id);
-    }
+    public async Task<GymClassDetails?> GetByIdWithEnrollmentsAsync(int id, CancellationToken cancellationToken = default)
+        => await GetByIdAsync(id, cancellationToken);
 
-    public async Task<IEnumerable<Class>> GetAllAsync()
-    {
-        return await _context.Classes
-            .Include(c => c.ClassType)
-            .Include(c => c.Coach)
-            .OrderBy(c => c.StartTime)
-            .ToListAsync();
-    }
-
-    public async Task<Class> CreateAsync(Class classEntity)
-    {
-        _context.Classes.Add(classEntity);
-        await _context.SaveChangesAsync();
-        
-        return (await GetByIdAsync(classEntity.ClassId))!;
-    }
-
-    public async Task<Class?> UpdateAsync(Class classEntity)
-    {
-        var existing = await _context.Classes.FindAsync(classEntity.ClassId);
-        if (existing == null)
-        {
-            return null;
-        }
-
-        existing.ClassTypeId = classEntity.ClassTypeId;
-        existing.CoachId = classEntity.CoachId;
-        existing.StartTime = classEntity.StartTime;
-        existing.EndTime = classEntity.EndTime;
-        existing.Capacity = classEntity.Capacity;
-
-        await _context.SaveChangesAsync();
-        
-        return await GetByIdAsync(existing.ClassId);
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var classEntity = await _context.Classes.FindAsync(id);
-        if (classEntity == null)
-        {
-            return false;
-        }
-
-        _context.Classes.Remove(classEntity);
-        return true;
-    }
-
-    public async Task<IEnumerable<Class>> GetScheduleForDateAsync(DateTime date)
+    public async Task<IReadOnlyList<GymClassDetails>> GetScheduleForDateAsync(DateTime date, CancellationToken cancellationToken = default)
     {
         var startOfDay = date.Date;
         var endOfDay = startOfDay.AddDays(1);
 
-        return await _context.Classes
+        var list = await context.Classes
+            .AsNoTracking()
             .Include(c => c.ClassType)
             .Include(c => c.Coach)
+            .Include(c => c.Enrollments)
             .Where(c => c.StartTime >= startOfDay && c.StartTime < endOfDay)
             .OrderBy(c => c.StartTime)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+
+        return list.Select(Map).ToList();
     }
 
-    public async Task<IEnumerable<Class>> GetScheduleForDateRangeAsync(DateTime startDate, DateTime endDate)
+    public async Task<IReadOnlyList<GymClassDetails>> GetScheduleForDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
     {
-        return await _context.Classes
+        var list = await context.Classes
+            .AsNoTracking()
             .Include(c => c.ClassType)
             .Include(c => c.Coach)
+            .Include(c => c.Enrollments)
             .Where(c => c.StartTime >= startDate && c.StartTime <= endDate)
             .OrderBy(c => c.StartTime)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+
+        return list.Select(Map).ToList();
     }
 
-    public async Task<bool> HasTimeConflictForCoachAsync(
-        int coachId, 
-        DateTime startTime, 
-        DateTime endTime, 
-        int? excludeClassId = null)
+    public async Task<GymClassDetails> CreateAsync(int classTypeId, int coachId, DateTime startUtc, DateTime endUtc, int capacity, CancellationToken cancellationToken = default)
     {
-        var query = _context.Classes
+        var entity = new E.Class
+        {
+            ClassTypeId = classTypeId,
+            CoachId = coachId,
+            StartTime = startUtc,
+            EndTime = endUtc,
+            Capacity = capacity
+        };
+
+        context.Classes.Add(entity);
+        await context.SaveChangesAsync(cancellationToken);
+
+        var loaded = await context.Classes
+            .Include(c => c.ClassType)
+            .Include(c => c.Coach)
+            .Include(c => c.Enrollments)
+            .FirstAsync(c => c.ClassId == entity.ClassId, cancellationToken);
+
+        return Map(loaded);
+    }
+
+    public async Task<GymClassDetails?> UpdateTimesAsync(int classId, DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default)
+    {
+        var existing = await context.Classes
+            .Include(c => c.ClassType)
+            .Include(c => c.Coach)
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.ClassId == classId, cancellationToken);
+
+        if (existing is null)
+            return null;
+
+        existing.StartTime = startUtc;
+        existing.EndTime = endUtc;
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        return Map(existing);
+    }
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var classEntity = await context.Classes.FindAsync([id], cancellationToken);
+        if (classEntity is null)
+            return false;
+
+        context.Classes.Remove(classEntity);
+        return true;
+    }
+
+    public async Task<bool> HasTimeConflictForCoachAsync(int coachId, DateTime startTime, DateTime endTime, int? excludeClassId = null, CancellationToken cancellationToken = default)
+    {
+        var query = context.Classes
             .Where(c => c.CoachId == coachId);
 
         if (excludeClassId.HasValue)
-        {
             query = query.Where(c => c.ClassId != excludeClassId.Value);
-        }
 
         return await query.AnyAsync(c =>
             (startTime >= c.StartTime && startTime < c.EndTime) ||
             (endTime > c.StartTime && endTime <= c.EndTime) ||
-            (startTime <= c.StartTime && endTime >= c.EndTime)
-        );
+            (startTime <= c.StartTime && endTime >= c.EndTime), cancellationToken);
     }
 
-    public async Task<IEnumerable<Class>> GetUpcomingClassesByCoachAsync(int coachId)
+    public Task<bool> HasOverlappingClassAsync(int coachId, TimeRange range, int? excludeClassId = null, CancellationToken cancellationToken = default)
     {
-        var now = DateTime.UtcNow;
-        
-        return await _context.Classes
-            .Include(c => c.ClassType)
-            .Where(c => c.CoachId == coachId && c.StartTime > now)
-            .OrderBy(c => c.StartTime)
-            .ToListAsync();
+        var start = range.Start.UtcDateTime;
+        var end = range.End.UtcDateTime;
+        return HasTimeConflictForCoachAsync(coachId, start, end, excludeClassId, cancellationToken);
     }
 
-    public async Task<IEnumerable<Class>> GetClassesByCoachAsync(int coachId, DateTime startDate, DateTime endDate)
+    public async Task<IReadOnlyList<GymClassDetails>> GetClassesByCoachAsync(int coachId, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
     {
-        return await _context.Classes
+        var list = await context.Classes
+            .AsNoTracking()
             .Include(c => c.ClassType)
+            .Include(c => c.Coach)
             .Include(c => c.Enrollments)
-            .Where(c => c.CoachId == coachId 
-                && c.StartTime >= startDate 
-                && c.EndTime <= endDate)
+            .Where(c => c.CoachId == coachId
+                        && c.StartTime >= startDate
+                        && c.EndTime <= endDate)
             .OrderBy(c => c.StartTime)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+
+        return list.Select(Map).ToList();
     }
 
-    public async Task<List<CoachEfficiencyDto>> GetCoachEfficiencyAnalyticsAsync(DateTime startDate, DateTime endDate)
+    public async Task<List<CoachEfficiencyRow>> GetCoachEfficiencyAnalyticsAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
     {
         var sql = @"
             WITH CoachClassStats AS (
@@ -182,9 +177,21 @@ public class ClassRepository : IClassRepository
             WHERE ccs.class_count > 0
             ORDER BY ""CoachRank"" ASC, ""TotalHours"" DESC;
         ";
-        
-        return await _context.Database
-            .SqlQuery<CoachEfficiencyDto>(FormattableStringFactory.Create(sql, startDate, endDate))
-            .ToListAsync();
+
+        return await context.Database
+            .SqlQuery<CoachEfficiencyRow>(FormattableStringFactory.Create(sql, startDate, endDate))
+            .ToListAsync(cancellationToken);
     }
+
+    private static GymClassDetails Map(E.Class c) =>
+        new(
+            c.ClassId,
+            c.ClassTypeId,
+            c.ClassType.Name,
+            c.CoachId,
+            c.Coach.Name,
+            c.StartTime,
+            c.EndTime,
+            c.Capacity,
+            c.Enrollments.Select(e => e.ClientId).ToList());
 }

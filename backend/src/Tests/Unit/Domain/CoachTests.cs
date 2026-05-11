@@ -20,7 +20,8 @@ public class CoachTests
         coach.Name.Value.Should().Be(ValidName);
         coach.Email.Value.Should().Be(ValidEmail);
         coach.Specialization.Value.Should().Be(ValidSpec);
-        coach.Password.Value.Should().Be(ValidPassword);
+        coach.MatchesPassword(ValidPassword).Should().BeTrue();
+        coach.Password.Value.Should().StartWith("$2");
         coach.Id.Should().Be(0);
     }
 

@@ -1,12 +1,13 @@
 using GymManagement.Application.Services.Interfaces;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/test-domain2")]
-public class DomainController(ICoachService coachService, IClassRepository classRepository) : ControllerBase
+[Authorize]
+public sealed class DomainController(ICoachService coachService, IClassService classService) : ControllerBase
 {
     [HttpGet("coaches")]
     public async Task<IActionResult> GetAllCoaches()
@@ -18,7 +19,7 @@ public class DomainController(ICoachService coachService, IClassRepository class
     [HttpGet("schedule/{date}")]
     public async Task<IActionResult> GetSchedule(DateTime date)
     {
-        var schedule = await classRepository.GetScheduleForDateAsync(date);
+        var schedule = await classService.GetScheduleForDateAsync(date);
         return Ok(schedule);
     }
 }

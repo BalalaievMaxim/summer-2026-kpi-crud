@@ -8,9 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Temporary: Application references Infrastructure until domain models + domain repo interfaces are created.
-         Once IRepository interfaces move to Domain (lab2 next steps), this reference will be removed. -->
-    <ProjectReference Include="..\Infrastructure\GymManagement.Infrastructure.csproj" />
     <ProjectReference Include="..\Domain\GymManagement.Domain.csproj" />
   </ItemGroup>
 

@@ -1,17 +1,17 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.DTOs;
-using GymManagement.Application.DTOs;
+using GymManagement.Domain.Classes;
+using GymManagement.Domain.Queries;
 
 namespace GymManagement.Application.Services.Interfaces;
 
 public interface IClassService
 {
-    Task<Class> CreateClassAsync(int classTypeId, int coachId, DateTime startTime, DateTime endTime, int capacity);
+    Task<GymClassDetails> CreateClassAsync(int classTypeId, int coachId, DateTime startTime, DateTime endTime, int capacity);
     Task<bool> DeleteClassAsync(int classId);
-    Task<Class?> UpdateClassAsync(int classId, DateTime newStartTime, DateTime newEndTime);
-    Task<IEnumerable<Class>> GetScheduleForDateAsync(DateTime date);
-    Task<IEnumerable<Class>> GetScheduleForWeekAsync(DateTime startOfWeek);
-    Task<IEnumerable<ClassAttendanceDto>> GetClassAttendanceAnalyticsAsync(DateTime startDate, DateTime endDate);
-    Task<CoachWorkloadDto> GetCoachWorkloadAsync(int coachId, DateTime startDate, DateTime endDate);
+    Task<GymClassDetails?> UpdateClassAsync(int classId, DateTime newStartTime, DateTime newEndTime);
+    Task<GymClassDetails?> GetClassByIdAsync(int id);
+    Task<IReadOnlyList<GymClassDetails>> GetScheduleForDateAsync(DateTime date);
+    Task<IReadOnlyList<GymClassDetails>> GetScheduleForWeekAsync(DateTime startOfWeek);
+    Task<IReadOnlyList<ClassAttendanceRow>> GetClassAttendanceAnalyticsAsync(DateTime startDate, DateTime endDate);
+    Task<CoachWorkloadRow> GetCoachWorkloadAsync(int coachId, DateTime startDate, DateTime endDate);
+    Task<List<CoachEfficiencyRow>> GetCoachEfficiencyAnalyticsAsync(DateTime startDate, DateTime endDate);
 }
-

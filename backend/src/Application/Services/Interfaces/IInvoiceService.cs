@@ -1,14 +1,12 @@
-using GymManagement.Infrastructure.DTOs;
-using GymManagement.Application.DTOs;
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Entities.Enums;
+using GymManagement.Domain.Billing;
+using GymManagement.Domain.Queries;
 
 namespace GymManagement.Application.Services.Interfaces;
 
 public interface IInvoiceService
 {
-    Task<Invoice> CreateInvoiceAsync(int clientId, PaymentMethod method, int membershipPlanId, string? notes);
+    Task<InvoiceRecord> CreateInvoiceAsync(int clientId, PaymentMethod method, int membershipPlanId, string? notes);
     Task UpdatePaidInvoiceAsync(int invoiceId);
-    Task<List<Invoice>> GetAllPendingInvoicesAsync(int clientId);
-    Task<List<TotalMembershipRevenueDto>> GetMonthlyRevenueAnalyticsAsync();
+    Task<List<InvoiceRecord>> GetAllPendingInvoicesAsync(int clientId);
+    Task<List<TotalMembershipRevenueRow>> GetMonthlyRevenueAnalyticsAsync();
 }

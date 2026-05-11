@@ -1,36 +1,37 @@
 using FluentAssertions;
 using GymManagement.Application.Services;
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Entities.Enums;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Billing;
+using GymManagement.Domain.Clients;
+using GymManagement.Domain.Memberships;
+using GymManagement.Domain.Ports;
 using Moq;
-using Xunit;
 
 namespace GymManagement.Tests.Unit.Services;
 
-public class MembershipServiceTests
+public sealed class MembershipServiceTests
 {
-    private readonly Mock<IMembershipRepository> _membershipRepoMock;
-    private readonly Mock<GymManagement.Domain.Clients.IClientRepository> _clientRepoMock;
+    private readonly Mock<IMembershipRepositoryPort> _membershipRepoMock;
+    private readonly Mock<IClientRepository> _clientRepoMock;
     private readonly Mock<IInvoiceService> _invoiceServiceMock;
-    private readonly Mock<IMembershipPlanRepository> _planRepoMock;
-    private readonly Mock<IInvoiceRepository> _invoiceRepoMock;
+    private readonly Mock<IMembershipPlanRepositoryPort> _planRepoMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly MembershipService _service;
 
     public MembershipServiceTests()
     {
-        _membershipRepoMock = new Mock<IMembershipRepository>();
-        _clientRepoMock = new Mock<GymManagement.Domain.Clients.IClientRepository>();
+        _membershipRepoMock = new Mock<IMembershipRepositoryPort>();
+        _clientRepoMock = new Mock<IClientRepository>();
         _invoiceServiceMock = new Mock<IInvoiceService>();
-        _planRepoMock = new Mock<IMembershipPlanRepository>();
-        _invoiceRepoMock = new Mock<IInvoiceRepository>();
+        _planRepoMock = new Mock<IMembershipPlanRepositoryPort>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
 
         _service = new MembershipService(
-            _membershipRepoMock.Object, _clientRepoMock.Object, _invoiceServiceMock.Object,
-            _planRepoMock.Object, _invoiceRepoMock.Object, _unitOfWorkMock.Object);
+            _membershipRepoMock.Object,
+            _clientRepoMock.Object,
+            _invoiceServiceMock.Object,
+            _planRepoMock.Object,
+            _unitOfWorkMock.Object);
     }
 
     [Fact]
@@ -40,17 +41,17 @@ public class MembershipServiceTests
         var planId = 1;
 
         _clientRepoMock.Setup(r => r.ExistsAsync(clientId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _planRepoMock.Setup(r => r.GetMembershipPlanByIdAsync(planId)).ReturnsAsync(new MembershipPlan());
+        _planRepoMock.Setup(r => r.GetMembershipPlanByIdAsync(planId, It.IsAny<CancellationToken>())).ReturnsAsync(new MembershipPlanSnapshot(1, "P", 1, 100m));
 
-        var activeMemberships = new List<Membership> { new Membership { PlanId = planId, IsActive = true } };
-        _membershipRepoMock.Setup(r => r.GetActiveMembershipsByClientAsync(clientId)).ReturnsAsync(activeMemberships);
+        var activeMemberships = new List<MembershipRecord> { new(1, clientId, planId, DateOnly.MinValue, DateOnly.MaxValue, true) };
+        _membershipRepoMock.Setup(r => r.GetActiveMembershipsByClientAsync(clientId, It.IsAny<CancellationToken>())).ReturnsAsync(activeMemberships);
 
         var act = async () => await _service.PurchaseMembershipAsync(clientId, planId, PaymentMethod.Card, "Notes");
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-                 .WithMessage("Client already has an active membership for this plan.");
+            .WithMessage("Client already has an active membership for this plan.");
 
-        _membershipRepoMock.Verify(r => r.AddAsync(It.IsAny<Membership>()), Times.Never);
+        _membershipRepoMock.Verify(r => r.AddAsync(It.IsAny<MembershipRecord>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -58,21 +59,21 @@ public class MembershipServiceTests
     {
         var clientId = 1;
         var planId = 1;
-        var plan = new MembershipPlan { DurationMonths = 6 };
+        var plan = new MembershipPlanSnapshot(1, "SixMo", 6, 200m);
 
         _clientRepoMock.Setup(r => r.ExistsAsync(clientId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _planRepoMock.Setup(r => r.GetMembershipPlanByIdAsync(planId)).ReturnsAsync(plan);
-        _membershipRepoMock.Setup(r => r.GetActiveMembershipsByClientAsync(clientId)).ReturnsAsync(new List<Membership>());
+        _planRepoMock.Setup(r => r.GetMembershipPlanByIdAsync(planId, It.IsAny<CancellationToken>())).ReturnsAsync(plan);
+        _membershipRepoMock.Setup(r => r.GetActiveMembershipsByClientAsync(clientId, It.IsAny<CancellationToken>())).ReturnsAsync(new List<MembershipRecord>());
 
         await _service.PurchaseMembershipAsync(clientId, planId, PaymentMethod.Card, "Notes");
 
         _invoiceServiceMock.Verify(s => s.CreateInvoiceAsync(clientId, PaymentMethod.Card, planId, "Notes"), Times.Once);
 
-        _membershipRepoMock.Verify(r => r.AddAsync(It.Is<Membership>(m =>
+        _membershipRepoMock.Verify(r => r.AddAsync(It.Is<MembershipRecord>(m =>
             m.ClientId == clientId &&
             m.PlanId == planId &&
-            m.IsActive == false)), Times.Once);
+            m.IsActive == false), It.IsAny<CancellationToken>()), Times.Once);
 
-        _unitOfWorkMock.Verify(uow => uow.SaveChangesAsync(default), Times.Once);
+        _unitOfWorkMock.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

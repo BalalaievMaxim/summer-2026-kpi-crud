@@ -1,6 +1,5 @@
-using GymManagement.Infrastructure.DTOs;
 using GymManagement.Application.DTOs;
-using GymManagement.Infrastructure.Persistence.Entities;
+using GymManagement.Domain.Memberships;
 
 namespace GymManagement.Application.Services.Interfaces;
 
@@ -8,6 +7,6 @@ public interface IMembershipPlanService
 {
     Task CreatePlanAsync(CreateMembershipPlanDto dto);
     Task DeleteUnusedPlanAsync(int planId);
-    Task<List<MembershipPlan>> GetPlansAsync(decimal? minPrice, decimal? maxPrice);
-    Task<MembershipPlan?> GetPlanByIdAsync(int id);
+    Task<List<MembershipPlanSnapshot>> GetPlansAsync(decimal? minPrice, decimal? maxPrice);
+    Task<MembershipPlanSnapshot?> GetPlanByIdAsync(int id);
 }

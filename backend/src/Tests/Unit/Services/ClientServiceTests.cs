@@ -3,7 +3,7 @@ using GymManagement.Application.DTOs;
 using GymManagement.Application.Services;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Clients.Errors;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Domain.Ports;
 using Moq;
 
 namespace GymManagement.Tests.Unit.Services;
