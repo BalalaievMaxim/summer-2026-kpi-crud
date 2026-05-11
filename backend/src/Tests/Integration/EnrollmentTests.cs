@@ -92,7 +92,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var content = await response.Content.ReadAsStringAsync();
-        content.Should().Contain("Class is full");
+        content.Should().Contain("Class.Full");
     }
 
     [Fact]

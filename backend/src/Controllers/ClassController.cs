@@ -1,6 +1,7 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Queries;
+using GymManagement.Domain.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,6 +35,10 @@ public sealed class ClassController(IClassService classService) : ControllerBase
         catch (Application.Exceptions.NotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+        catch (DomainError ex)
+        {
+            return BadRequest(new { code = ex.Code, error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {

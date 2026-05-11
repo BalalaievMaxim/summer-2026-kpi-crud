@@ -1,6 +1,7 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Application.Exceptions;
+using GymManagement.Domain.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -27,13 +28,13 @@ public sealed class EnrollmentController(IEnrollmentService enrollmentService) :
         {
             return NotFound(new { error = ex.Message });
         }
+        catch (DomainError ex)
+        {
+            return BadRequest(new { code = ex.Code, error = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, new { error = "Unable to create enrollment." });
         }
     }
 }
