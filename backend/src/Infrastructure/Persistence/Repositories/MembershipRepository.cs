@@ -1,102 +1,66 @@
-using DomainMembership = GymManagement.Domain.Memberships.Membership;
-using DomainIMembershipRepository = GymManagement.Domain.Memberships.IMembershipRepository;
-using EfMembership = GymManagement.Infrastructure.Persistence.Entities.Membership;
-using OldIMembershipRepository = GymManagement.Infrastructure.Persistence.Repositories.Interfaces.IMembershipRepository;
-using GymManagement.Infrastructure.Persistence.Mappers;
+using GymManagement.Domain.Memberships;
+using GymManagement.Domain.Ports;
+using GymManagement.Infrastructure.Persistence;
+using E = GymManagement.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class MembershipRepository : OldIMembershipRepository, DomainIMembershipRepository
+public sealed class MembershipRepository(GymManagementContext context) : IMembershipRepositoryPort
 {
-    private readonly GymManagementContext _context;
-
-    public MembershipRepository(GymManagementContext context)
+    public async Task AddAsync(MembershipRecord membership, CancellationToken cancellationToken = default)
     {
-        _context = context;
+        var entity = new E.Membership
+        {
+            ClientId = membership.ClientId,
+            PlanId = membership.PlanId,
+            StartDate = membership.StartDate,
+            EndDate = membership.EndDate,
+            IsActive = membership.IsActive
+        };
+
+        await context.Memberships.AddAsync(entity, cancellationToken);
     }
 
-    // ── старий інтерфейс ──
-    public async Task AddAsync(EfMembership membership)
-    {
-        await _context.Memberships.AddAsync(membership);
-    }
-
-    public async Task<List<EfMembership>> GetActiveMembershipsByClientAsync(int clientId)
+    public async Task<List<MembershipRecord>> GetActiveMembershipsByClientAsync(int clientId,
+        CancellationToken cancellationToken = default)
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
-        return await _context.Memberships
-            .Where(m => m.ClientId == clientId && m.IsActive == true && m.EndDate > today)
-            .ToListAsync();
+        var list = await context.Memberships
+            .Where(m => m.ClientId == clientId && m.IsActive && m.EndDate > today)
+            .ToListAsync(cancellationToken);
+
+        return list.Select(ToRecord).ToList();
     }
 
-    public async Task MarkAsActiveMembershipAsync(int membershipId)
+    public async Task MarkAsActiveMembershipAsync(int membershipId, CancellationToken cancellationToken = default)
     {
-        await _context.Memberships
+        await context.Memberships
             .Where(m => m.MembershipId == membershipId)
-            .ExecuteUpdateAsync(s => s.SetProperty(m => m.IsActive, true));
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.IsActive, true), cancellationToken);
     }
 
-    public async Task<List<EfMembership>> GetAllActiveMembershipReferencedOnMembershipPlan(int planId)
+    public async Task<List<MembershipRecord>> GetAllActiveMembershipReferencedOnMembershipPlan(int planId,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.Memberships
-            .Where(m => m.PlanId == planId && m.IsActive == true)
-            .ToListAsync();
+        var list = await context.Memberships
+            .Where(m => m.PlanId == planId && m.IsActive)
+            .ToListAsync(cancellationToken);
+
+        return list.Select(ToRecord).ToList();
     }
 
-    public async Task<EfMembership?> GetPendingMembershipByClientAsync(int clientId)
+    public async Task<MembershipRecord?> GetPendingMembershipByClientAsync(int clientId,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.Memberships
+        var entity = await context.Memberships
             .Where(m => m.ClientId == clientId && m.IsActive == false)
             .OrderByDescending(m => m.StartDate)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return entity is null ? null : ToRecord(entity);
     }
 
-    // ── новий доменний інтерфейс ──
-    public async Task<DomainMembership?> GetByIdAsync(Guid id)
-    {
-        var intId = GuidToInt(id);
-        var entity = await _context.Memberships
-            .Include(m => m.MembershipPlan)
-            .ThenInclude(p => p.PlanAccesses)
-            .FirstOrDefaultAsync(m => m.MembershipId == intId);
-        return entity is null ? null : MembershipMapper.ToDomain(entity);
-    }
-
-    public async Task<List<DomainMembership>> GetActiveByClientAsync(Guid clientId)
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var intClientId = GuidToInt(clientId);
-        var entities = await _context.Memberships
-            .Where(m => m.ClientId == intClientId && m.IsActive && m.EndDate >= today)
-            .ToListAsync();
-        return entities.Select(MembershipMapper.ToDomain).ToList();
-    }
-
-    public async Task<bool> HasActiveMembershipAsync(Guid clientId)
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var intClientId = GuidToInt(clientId);
-        return await _context.Memberships
-            .AnyAsync(m => m.ClientId == intClientId && m.IsActive && m.EndDate >= today);
-    }
-
-    public async Task AddAsync(DomainMembership membership)
-    {
-        var entity = MembershipMapper.ToEntity(membership);
-        await _context.Memberships.AddAsync(entity);
-    }
-
-    public async Task UpdateAsync(DomainMembership membership)
-    {
-        var entity = MembershipMapper.ToEntity(membership);
-        _context.Memberships.Update(entity);
-        await Task.CompletedTask;
-    }
-
-    private static int GuidToInt(Guid id)
-    {
-        var bytes = id.ToByteArray();
-        return bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
-    }
+    private static MembershipRecord ToRecord(E.Membership m) =>
+        new(m.MembershipId, m.ClientId, m.PlanId, m.StartDate, m.EndDate, m.IsActive);
 }

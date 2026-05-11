@@ -1,103 +1,89 @@
-using DomainInvoice = GymManagement.Domain.Billing.Invoice;
-using DomainIInvoiceRepository = GymManagement.Domain.Billing.IInvoiceRepository;
-using EfInvoice = GymManagement.Infrastructure.Persistence.Entities.Invoice;
-using OldIInvoiceRepository = GymManagement.Infrastructure.Persistence.Repositories.Interfaces.IInvoiceRepository;
 using GymManagement.Domain.Billing;
-using GymManagement.Infrastructure.DTOs;
-using GymManagement.Infrastructure.Persistence.Mappers;
+using GymManagement.Domain.Ports;
+using GymManagement.Domain.Queries;
+using GymManagement.Infrastructure.Persistence;
+using E = GymManagement.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class InvoiceRepository : OldIInvoiceRepository, DomainIInvoiceRepository
+public sealed class InvoiceRepository(GymManagementContext context) : IInvoiceRepositoryPort
 {
-    private readonly GymManagementContext _context;
-
-    public InvoiceRepository(GymManagementContext context)
+    public async Task<List<InvoiceRecord>> GetAllClientInvoicesAsync(int clientId,
+        CancellationToken cancellationToken = default)
     {
-        _context = context;
-    }
-
-    // ── старий інтерфейс ──
-    public async Task<List<EfInvoice>> GetAllClientInvoicesAsync(int clientId)
-    {
-        return await _context.Invoices
+        var list = await context.Invoices
             .Where(i => i.ClientId == clientId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+
+        return list.Select(ToRecord).ToList();
     }
 
-    public async Task<List<EfInvoice>> GetPendingInvoicesAsync(int clientId)
+    public async Task<List<InvoiceRecord>> GetPendingInvoicesAsync(int clientId,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.Invoices
+        var list = await context.Invoices
             .Where(i => i.ClientId == clientId && i.Status == "pending")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+
+        return list.Select(ToRecord).ToList();
     }
 
-    public async Task<EfInvoice?> GetInvoiceAsync(int invoiceId)
+    public async Task<InvoiceRecord?> GetInvoiceAsync(int invoiceId, CancellationToken cancellationToken = default)
     {
-        return await _context.Invoices.FindAsync(invoiceId);
+        var entity = await context.Invoices.FindAsync([invoiceId], cancellationToken);
+        return entity is null ? null : ToRecord(entity);
     }
 
-    public async Task AddAsync(EfInvoice invoice)
+    public async Task AddAsync(InvoiceRecord invoice, CancellationToken cancellationToken = default)
     {
-        await _context.Invoices.AddAsync(invoice);
+        var entity = new E.Invoice
+        {
+            ClientId = invoice.ClientId,
+            Amount = invoice.Amount,
+            Date = invoice.Date,
+            Status = invoice.Status,
+            PaymentMethod = invoice.PaymentMethod,
+            Notes = invoice.Notes
+        };
+
+        await context.Invoices.AddAsync(entity, cancellationToken);
     }
 
-    public async Task<List<TotalMembershipRevenueDto>> GetMonthlyRevenueByPlanAsync()
+    public async Task UpdateStatusAsync(int invoiceId, string status, CancellationToken cancellationToken = default)
     {
-        return await _context.Invoices
+        await context.Invoices
+            .Where(i => i.InvoiceId == invoiceId)
+            .ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, status), cancellationToken);
+    }
+
+    public async Task<List<TotalMembershipRevenueRow>> GetMonthlyRevenueByPlanAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await context.Invoices
             .Where(i => i.Status == "paid")
-            .Join(_context.Memberships,
+            .Join(context.Memberships,
                 i => i.ClientId,
                 m => m.ClientId,
                 (i, m) => new { Invoice = i, Membership = m })
-            .Join(_context.Membershipplans,
+            .Join(context.Membershipplans,
                 im => im.Membership.PlanId,
                 p => p.PlanId,
                 (im, p) => new { im.Invoice, Plan = p })
             .GroupBy(x => new { x.Invoice.Date.Month, x.Plan.Name })
-            .Select(g => new TotalMembershipRevenueDto
+            .Select(g => new
             {
-                RevenueMonth = g.Key.Month.ToString(),
+                Month = g.Key.Month,
                 PlanName = g.Key.Name,
                 TotalRevenue = g.Sum(x => x.Invoice.Amount)
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+
+        return raw
+            .Select(x => new TotalMembershipRevenueRow(x.Month.ToString(), x.PlanName, x.TotalRevenue))
+            .ToList();
     }
 
-    // ── новий доменний інтерфейс ──
-    public async Task<DomainInvoice?> GetByIdAsync(Guid id)
-    {
-        var intId = GuidToInt(id);
-        var entity = await _context.Invoices.FindAsync(intId);
-        return entity is null ? null : InvoiceMapper.ToDomain(entity);
-    }
-
-    public async Task<List<DomainInvoice>> GetByClientAsync(Guid clientId)
-    {
-        var intClientId = GuidToInt(clientId);
-        var entities = await _context.Invoices
-            .Where(i => i.ClientId == intClientId)
-            .ToListAsync();
-        return entities.Select(InvoiceMapper.ToDomain).ToList();
-    }
-
-    public async Task AddAsync(DomainInvoice invoice)
-    {
-        var entity = InvoiceMapper.ToEntity(invoice);
-        await _context.Invoices.AddAsync(entity);
-    }
-
-    public async Task UpdateAsync(DomainInvoice invoice)
-    {
-        var entity = InvoiceMapper.ToEntity(invoice);
-        _context.Invoices.Update(entity);
-        await Task.CompletedTask;
-    }
-
-    private static int GuidToInt(Guid id)
-    {
-        var bytes = id.ToByteArray();
-        return bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
-    }
+    private static InvoiceRecord ToRecord(E.Invoice i) =>
+        new(i.InvoiceId, i.ClientId, i.Amount, i.Date, i.Status, i.PaymentMethod ?? string.Empty, i.Notes);
 }

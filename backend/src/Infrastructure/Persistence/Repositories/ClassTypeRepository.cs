@@ -1,76 +1,85 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Domain.Classes;
+using GymManagement.Domain.Ports;
 using GymManagement.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;      
+using E = GymManagement.Infrastructure.Persistence.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class ClassTypeRepository : IClassTypeRepository
+public sealed class ClassTypeRepository(GymManagementContext context) : IClassTypeRepositoryPort
 {
-    private readonly GymManagementContext _context;
-
-    public ClassTypeRepository(GymManagementContext context)
+    public async Task<ClassTypeSnapshot?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        _context = context;
+        var entity = await context.Classtypes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(ct => ct.ClassTypeId == id, cancellationToken);
+
+        return entity is null ? null : Map(entity);
     }
 
-    public async Task<ClassType?> GetByIdAsync(int id)
+    public async Task<IReadOnlyList<ClassTypeSnapshot>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.Classtypes
-            .Include(ct => ct.Classes)
-            .FirstOrDefaultAsync(ct => ct.ClassTypeId == id);
-    }
-
-    public async Task<IEnumerable<ClassType>> GetAllAsync()
-    {
-        return await _context.Classtypes
+        var list = await context.Classtypes
+            .AsNoTracking()
             .OrderBy(ct => ct.Name)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+
+        return list.Select(Map).ToList();
     }
 
-    public async Task<ClassType> CreateAsync(ClassType classType)
+    public async Task<ClassTypeSnapshot> CreateAsync(string name, string? description,
+        CancellationToken cancellationToken = default)
     {
-        _context.Classtypes.Add(classType);
-        await _context.SaveChangesAsync();
-        return classType;
-    }
-
-    public async Task<ClassType?> UpdateAsync(ClassType classType)
-    {
-        var existing = await _context.Classtypes.FindAsync(classType.ClassTypeId);
-        if (existing == null)
+        var entity = new E.ClassType
         {
+            Name = name,
+            Description = description
+        };
+
+        context.Classtypes.Add(entity);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return Map(entity);
+    }
+
+    public async Task<ClassTypeSnapshot?> UpdateAsync(int id, string name, string? description,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await context.Classtypes.FindAsync([id], cancellationToken);
+        if (existing is null)
             return null;
-        }
 
-        existing.Name = classType.Name;
-        existing.Description = classType.Description;
+        existing.Name = name;
+        existing.Description = description;
 
-        await _context.SaveChangesAsync();
-        return existing;
+        await context.SaveChangesAsync(cancellationToken);
+
+        return Map(existing);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var classType = await _context.Classtypes.FindAsync(id);
-        if (classType == null)
-        {
+        var classType = await context.Classtypes.FindAsync([id], cancellationToken);
+        if (classType is null)
             return false;
-        }
 
-        _context.Classtypes.Remove(classType);
-        await _context.SaveChangesAsync();
+        context.Classtypes.Remove(classType);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 
-    public async Task<bool> ExistsAsync(int id)
+    public Task<bool> ExistsAsync(int id, CancellationToken cancellationToken = default)
+        => context.Classtypes.AnyAsync(ct => ct.ClassTypeId == id, cancellationToken);
+
+    public async Task<ClassTypeSnapshot?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
-        return await _context.Classtypes.AnyAsync(ct => ct.ClassTypeId == id);
+        var entity = await context.Classtypes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(ct => ct.Name == name, cancellationToken);
+
+        return entity is null ? null : Map(entity);
     }
 
-    public async Task<ClassType?> GetByNameAsync(string name)
-    {
-        return await _context.Classtypes
-            .FirstOrDefaultAsync(ct => ct.Name == name);
-    }
+    private static ClassTypeSnapshot Map(E.ClassType ct) =>
+        new(ct.ClassTypeId, ct.Name, ct.Description);
 }

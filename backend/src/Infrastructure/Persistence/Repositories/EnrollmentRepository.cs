@@ -1,14 +1,29 @@
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Domain.Ports;
 using GymManagement.Infrastructure.Persistence;
-using System.Threading.Tasks;
+using E = GymManagement.Infrastructure.Persistence.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class EnrollmentRepository(GymManagementContext context) : IEnrollmentRepository
+public sealed class EnrollmentRepository(GymManagementContext context) : IEnrollmentRepositoryPort
 {
-    public async Task AddAsync(Enrollment enrollment)
+    public async Task<int> AddAsync(int clientId, int classId, DateTime registrationTimeUtc,
+        CancellationToken cancellationToken = default)
     {
-        await context.Enrollments.AddAsync(enrollment);
+        var entity = new E.Enrollment
+        {
+            ClientId = clientId,
+            ClassId = classId,
+            RegistrationTime = registrationTimeUtc
+        };
+
+        await context.Enrollments.AddAsync(entity, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+        return entity.EnrollmentId;
     }
+
+    public Task<bool> IsClientEnrolledAsync(int clientId, int classId, CancellationToken cancellationToken = default)
+        => context.Enrollments.AnyAsync(
+            e => e.ClientId == clientId && e.ClassId == classId,
+            cancellationToken);
 }

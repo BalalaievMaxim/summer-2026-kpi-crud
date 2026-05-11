@@ -1,5 +1,6 @@
 using System.Data.Common;
 using GymManagement.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -33,6 +34,10 @@ public class GymApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 options.UseNpgsql(_dbContainer.GetConnectionString())
                        .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             });
+
+            services
+                .AddAuthentication(TestAuthHandler.SchemeName)
+                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
         });
     }
 

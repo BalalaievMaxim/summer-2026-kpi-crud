@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using GymManagement.Infrastructure.Persistence.Entities;
 using Xunit;
+using GymClassDetails = GymManagement.Domain.Classes.GymClassDetails;
 
 namespace GymManagement.Tests.Integration;
 
@@ -65,13 +66,13 @@ public class ClassSelectTests : BaseIntegrationTest
         var response = await Client.GetAsync($"/api/class/schedule/{targetDate:yyyy-MM-dd}");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var schedule = await response.Content.ReadFromJsonAsync<List<Class>>();
-        
+        var schedule = await response.Content.ReadFromJsonAsync<List<GymClassDetails>>();
+
         schedule.Should().NotBeNull();
         schedule!.Should().HaveCount(3);
-        schedule[0].StartTime.Hour.Should().Be(8);
-        schedule[1].StartTime.Hour.Should().Be(10);
-        schedule[2].StartTime.Hour.Should().Be(14);
+        schedule[0].StartTimeUtc.Hour.Should().Be(8);
+        schedule[1].StartTimeUtc.Hour.Should().Be(10);
+        schedule[2].StartTimeUtc.Hour.Should().Be(14);
     }
 
     [Fact]

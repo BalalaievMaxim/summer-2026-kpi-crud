@@ -1,15 +1,16 @@
 using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Coaches;
+using GymManagement.Domain.Ports;
 using GymManagement.Domain.Shared.ValueObjects;
 
 namespace GymManagement.Domain.Classes;
 
 public class ClassFactory
 {
-    private readonly IClassRepository _classRepo;
+    private readonly IClassScheduleRepository _classRepo;
     private readonly ICoachRepository _coachRepo;
 
-    public ClassFactory(IClassRepository classRepo, ICoachRepository coachRepo)
+    public ClassFactory(IClassScheduleRepository classRepo, ICoachRepository coachRepo)
     {
         _classRepo = classRepo;
         _coachRepo = coachRepo;
@@ -35,7 +36,7 @@ public class ClassFactory
         if (coach is null)
             throw new CoachNotFoundForClassError(coachId);
 
-        var hasConflict = await _classRepo.HasOverlappingClass(coachId, schedule, null, cancellationToken);
+        var hasConflict = await _classRepo.HasOverlappingClassAsync(coachId, schedule, null, cancellationToken);
         if (hasConflict)
             throw new CoachScheduleConflictError(coachId);
 

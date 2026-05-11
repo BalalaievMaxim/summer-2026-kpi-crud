@@ -1,7 +1,7 @@
 using GymManagement.Domain.Clients;
-using GymManagement.Infrastructure.DTOs;
+using GymManagement.Domain.Ports;
+using GymManagement.Domain.Queries;
 using GymManagement.Infrastructure.Persistence;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Runtime.CompilerServices;
 
@@ -31,7 +31,6 @@ public class ClientRepository(GymManagementContext context) : IClientRepository,
             CreatedAt = DateTime.UtcNow
         };
         await context.Clients.AddAsync(entity, ct);
-        await context.SaveChangesAsync(ct);
         return ToDomain(entity);
     }
 
@@ -96,7 +95,7 @@ public class ClientRepository(GymManagementContext context) : IClientRepository,
             context.Clients.Remove(entity);
     }
 
-    public async Task<List<ClientActivityDto>> GetClientActivityAnalyticsAsync()
+    public async Task<List<ClientActivityRow>> GetClientActivityAnalyticsAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
             WITH ClientEnrollmentStats AS (
@@ -121,7 +120,7 @@ public class ClientRepository(GymManagementContext context) : IClientRepository,
             """;
 
         return await context.Database
-            .SqlQuery<ClientActivityDto>(FormattableStringFactory.Create(sql))
-            .ToListAsync();
+            .SqlQuery<ClientActivityRow>(FormattableStringFactory.Create(sql))
+            .ToListAsync(cancellationToken);
     }
 }

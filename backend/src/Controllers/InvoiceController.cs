@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using GymManagement.Application.Services;
-using GymManagement.Infrastructure.DTOs;
 using GymManagement.Application.DTOs;
-using GymManagement.Infrastructure.Persistence.Entities;
-using GymManagement.Application.Exceptions;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Billing;
+using GymManagement.Domain.Queries;
+using GymManagement.Application.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +11,8 @@ namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/invoices")]
-public class InvoiceController(IInvoiceService service) : ControllerBase
+[Authorize]
+public sealed class InvoiceController(IInvoiceService service) : ControllerBase
 {
     [HttpPost("create")]
     [ProducesResponseType(typeof(InvoiceResponseDto), StatusCodes.Status201Created)]
@@ -27,9 +23,9 @@ public class InvoiceController(IInvoiceService service) : ControllerBase
         try
         {
             var result = await service.CreateInvoiceAsync(
-                requestDto.ClientId, 
-                requestDto.PaymentMethod, 
-                requestDto.MembershipPlanId, 
+                requestDto.ClientId,
+                requestDto.PaymentMethod,
+                requestDto.MembershipPlanId,
                 requestDto.Notes);
 
             var response = MapToResponseDto(result);
@@ -40,9 +36,9 @@ public class InvoiceController(IInvoiceService service) : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { error = "Unable to create invoice." });
         }
     }
 
@@ -60,9 +56,9 @@ public class InvoiceController(IInvoiceService service) : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { error = "Unable to update invoice status." });
         }
     }
 
@@ -71,27 +67,27 @@ public class InvoiceController(IInvoiceService service) : ControllerBase
     public async Task<IActionResult> GetPendingInvoices(int clientId)
     {
         var invoices = await service.GetAllPendingInvoicesAsync(clientId);
-        
+
         var response = invoices.Select(MapToResponseDto).ToList();
-        
+
         return Ok(response);
     }
-    
+
     [HttpGet("analytics/revenue-by-plan")]
-    public async Task<ActionResult<List<TotalMembershipRevenueDto>>> GetRevenueAnalytics()
+    public async Task<ActionResult<List<TotalMembershipRevenueRow>>> GetRevenueAnalytics()
     {
         try
         {
             var analytics = await service.GetMonthlyRevenueAnalyticsAsync();
             return Ok(analytics);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { error = "Unable to load revenue analytics." });
         }
     }
 
-    private static InvoiceResponseDto MapToResponseDto(Invoice invoice)
+    private static InvoiceResponseDto MapToResponseDto(InvoiceRecord invoice)
     {
         return new InvoiceResponseDto
         {
@@ -104,5 +100,4 @@ public class InvoiceController(IInvoiceService service) : ControllerBase
             Notes = invoice.Notes
         };
     }
-    
 }

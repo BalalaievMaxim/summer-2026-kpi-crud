@@ -8,6 +8,8 @@ public static class DbInitializer
 {
     public static async Task InitializeAsync(GymManagementContext context)
     {
+        static string Hash(string password) => BCrypt.Net.BCrypt.HashPassword(password);
+
         try
         {
             await context.Database.MigrateAsync();
@@ -71,11 +73,11 @@ public static class DbInitializer
         {
             var clients = new[]
             {
-                new Client { Name = "ivan petrenko", Email = "ivan@test.com", Password = "pass", Phone = "+380501112233", CreatedAt = DateTime.Now.AddMonths(-5) },
-                new Client { Name = "maria sydorenko", Email = "maria@test.com", Password = "pass", Phone = "+380679998877", CreatedAt = DateTime.Now.AddMonths(-3) },
-                new Client { Name = "oleg bondar", Email = "oleg@test.com", Password = "pass", Phone = "+380935554433", CreatedAt = DateTime.Now.AddMonths(-2) },
-                new Client { Name = "anna koval", Email = "anna@test.com", Password = "pass", Phone = "+380991234567", CreatedAt = DateTime.Now.AddMonths(-1) },
-                new Client { Name = "dmytro shevchenko", Email = "dima@test.com", Password = "pass", Phone = "+380631112222", CreatedAt = DateTime.Now.AddDays(-10) }
+                new Client { Name = "ivan petrenko", Email = "ivan@test.com", Password = Hash("pass"), Phone = "+380501112233", CreatedAt = DateTime.Now.AddMonths(-5) },
+                new Client { Name = "maria sydorenko", Email = "maria@test.com", Password = Hash("pass"), Phone = "+380679998877", CreatedAt = DateTime.Now.AddMonths(-3) },
+                new Client { Name = "oleg bondar", Email = "oleg@test.com", Password = Hash("pass"), Phone = "+380935554433", CreatedAt = DateTime.Now.AddMonths(-2) },
+                new Client { Name = "anna koval", Email = "anna@test.com", Password = Hash("pass"), Phone = "+380991234567", CreatedAt = DateTime.Now.AddMonths(-1) },
+                new Client { Name = "dmytro shevchenko", Email = "dima@test.com", Password = Hash("pass"), Phone = "+380631112222", CreatedAt = DateTime.Now.AddDays(-10) }
             };
             context.Clients.AddRange(clients);
             await context.SaveChangesAsync();
@@ -168,9 +170,9 @@ public static class DbInitializer
         {
             var coaches = new[]
             {
-                new Coach { Name = "arnold s.", Specialization = "bodybuilding", Email = "arnold@gym.com", Password = "pass", CreatedAt = DateTime.Now },
-                new Coach { Name = "serena w.", Specialization = "tennis/cardio", Email = "serena@gym.com", Password = "pass", CreatedAt = DateTime.Now },
-                new Coach { Name = "bruce lee", Specialization = "martial arts", Email = "bruce@gym.com", Password = "pass", CreatedAt = DateTime.Now }
+                new Coach { Name = "arnold s.", Specialization = "bodybuilding", Email = "arnold@gym.com", Password = Hash("pass"), CreatedAt = DateTime.Now },
+                new Coach { Name = "serena w.", Specialization = "tennis/cardio", Email = "serena@gym.com", Password = Hash("pass"), CreatedAt = DateTime.Now },
+                new Coach { Name = "bruce lee", Specialization = "martial arts", Email = "bruce@gym.com", Password = Hash("pass"), CreatedAt = DateTime.Now }
             };
             context.Coaches.AddRange(coaches);
             await context.SaveChangesAsync();

@@ -1,36 +1,28 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using GymManagement.Application.Services;
-using GymManagement.Infrastructure.DTOs;
 using GymManagement.Application.DTOs;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Memberships;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.API.Controllers;
 
 [ApiController]
 [Route("api/v1/memberships")]
-public class MembershipController(
-    IMembershipService membershipService,
-    IMembershipRepository membershipRepository) : ControllerBase
+[Authorize]
+public sealed class MembershipController(IMembershipService membershipService) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateMembership([FromBody] PurchaseMembershipDto dto)
     {
         try
         {
-            var method = dto.PaymentMethod;
-
             await membershipService.PurchaseMembershipAsync(
                 dto.ClientId,
                 dto.PlanId,
-                method,
+                dto.PaymentMethod,
                 dto.Notes);
 
-            var result = await membershipRepository.GetActiveMembershipsByClientAsync(dto.ClientId);
+            var result = await membershipService.GetActiveMembershipsByClientAsync(dto.ClientId);
 
             return CreatedAtAction(nameof(GetActiveByClient), new { clientId = dto.ClientId }, result);
         }
@@ -42,21 +34,16 @@ public class MembershipController(
         {
             return Conflict(new { error = ex.Message });
         }
-        catch (DbUpdateException ex)
+        catch (Exception)
         {
-            var innerMessage = ex.InnerException?.Message ?? ex.Message;
-            return StatusCode(500, new { error = $"Database Error: {innerMessage}" });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, new { error = "Unable to process membership purchase." });
         }
     }
 
     [HttpGet("active/{clientId}")]
     public async Task<IActionResult> GetActiveByClient(int clientId)
     {
-        var memberships = await membershipRepository.GetActiveMembershipsByClientAsync(clientId);
+        var memberships = await membershipService.GetActiveMembershipsByClientAsync(clientId);
         return Ok(memberships);
     }
 }

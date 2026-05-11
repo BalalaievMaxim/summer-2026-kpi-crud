@@ -1,11 +1,7 @@
-using System;
-using System.Threading.Tasks;
-using GymManagement.Infrastructure.DTOs;
 using GymManagement.Application.DTOs;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
 using GymManagement.Application.Services.Interfaces;
-using GymManagement.Infrastructure.Persistence.Entities;
 using GymManagement.Application.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,11 +9,11 @@ namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/enrollments")]
-public class EnrollmentController(IEnrollmentService enrollmentService) : ControllerBase
+[Authorize]
+public sealed class EnrollmentController(IEnrollmentService enrollmentService) : ControllerBase
 {
-    
     [HttpPost]
-    [ProducesResponseType(typeof(Enrollment), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(EnrollmentResultDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> EnrollClient([FromBody] CreateEnrollmentDto dto)
@@ -35,9 +31,9 @@ public class EnrollmentController(IEnrollmentService enrollmentService) : Contro
         {
             return BadRequest(new { error = ex.Message });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(500, new { error = $"Internal server error: {ex.Message}" });
+            return StatusCode(500, new { error = "Unable to create enrollment." });
         }
     }
 }

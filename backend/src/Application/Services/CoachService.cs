@@ -2,7 +2,7 @@ using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Coaches;
 using GymManagement.Domain.Coaches.Errors;
-using GymManagement.Infrastructure.Persistence.Repositories.Interfaces;
+using GymManagement.Domain.Ports;
 
 namespace GymManagement.Application.Services;
 
@@ -25,7 +25,9 @@ public class CoachService(
             throw new CoachEmailAlreadyExistsError(dto.Email);
 
         var coach = Coach.Create(dto.Name, dto.Email, dto.Specialization, dto.Password);
-        return await coachRepository.AddAsync(coach);
+        var created = await coachRepository.AddAsync(coach);
+        await unitOfWork.SaveChangesAsync();
+        return created;
     }
 
     public async Task DeleteCoachAsync(int id)

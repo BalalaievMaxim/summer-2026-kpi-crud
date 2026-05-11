@@ -1,15 +1,15 @@
-using GymManagement.Domain.Classes;
 using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Enrollments.Errors;
+using GymManagement.Domain.Ports;
 
 namespace GymManagement.Domain.Enrollments;
 
 public class EnrollmentFactory
 {
-    private readonly IClassRepository _classRepo;
-    private readonly IEnrollmentRepository _enrollmentRepo;
+    private readonly IClassScheduleRepository _classRepo;
+    private readonly IEnrollmentRepositoryPort _enrollmentRepo;
 
-    public EnrollmentFactory(IClassRepository classRepo, IEnrollmentRepository enrollmentRepo)
+    public EnrollmentFactory(IClassScheduleRepository classRepo, IEnrollmentRepositoryPort enrollmentRepo)
     {
         _classRepo = classRepo;
         _enrollmentRepo = enrollmentRepo;
@@ -25,11 +25,11 @@ public class EnrollmentFactory
         if (classId <= 0)
             throw new InvalidEnrollmentError("ClassId must be a positive number.");
 
-        var classEntity = await _classRepo.GetByIdAsync(classId, cancellationToken);
+        var classEntity = await _classRepo.GetByIdWithEnrollmentsAsync(classId, cancellationToken);
         if (classEntity is null)
             throw new ClassNotFoundError(classId);
 
-        if (classEntity.IsFull)
+        if (classEntity.EnrollmentClientIds.Count >= classEntity.Capacity)
             throw new ClassFullError(classId);
 
         var alreadyEnrolled = await _enrollmentRepo.IsClientEnrolledAsync(clientId, classId, cancellationToken);

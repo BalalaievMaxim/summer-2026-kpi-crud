@@ -19,7 +19,8 @@ public class ClientTests
         client.Name.Value.Should().Be(ValidName);
         client.Email.Value.Should().Be(ValidEmail);
         client.Phone.Value.Should().Be(ValidPhone);
-        client.Password.Value.Should().Be(ValidPassword);
+        client.MatchesPassword(ValidPassword).Should().BeTrue();
+        client.Password.Value.Should().StartWith("$2");
         client.Id.Should().Be(0);
     }
 

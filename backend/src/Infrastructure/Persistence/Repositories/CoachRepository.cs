@@ -20,7 +20,6 @@ public class CoachRepository(GymManagementContext context) : ICoachRepository
             CreatedAt = DateTime.UtcNow
         };
         context.Coaches.Add(entity);
-        await context.SaveChangesAsync(ct);
         return ToDomain(entity);
     }
 
