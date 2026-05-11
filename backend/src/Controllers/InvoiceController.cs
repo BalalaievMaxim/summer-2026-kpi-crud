@@ -1,7 +1,9 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Billing;
+using GymManagement.Domain.Billing.Errors;
 using GymManagement.Domain.Queries;
+using GymManagement.Domain.Shared;
 using GymManagement.Application.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -36,14 +38,23 @@ public sealed class InvoiceController(IInvoiceService service) : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception)
+        catch (ClientNotFoundForInvoiceError ex)
         {
-            return BadRequest(new { error = "Unable to create invoice." });
+            return NotFound(new { code = ex.Code, error = ex.Message });
+        }
+        catch (MembershipPlanNotFoundForInvoiceError ex)
+        {
+            return NotFound(new { code = ex.Code, error = ex.Message });
+        }
+        catch (DomainError ex)
+        {
+            return BadRequest(new { code = ex.Code, error = ex.Message });
         }
     }
 
     [HttpPut("{invoiceId}/pay")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkInvoiceAsPaid(int invoiceId)
     {
@@ -56,9 +67,9 @@ public sealed class InvoiceController(IInvoiceService service) : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception)
+        catch (DomainError ex)
         {
-            return BadRequest(new { error = "Unable to update invoice status." });
+            return BadRequest(new { code = ex.Code, error = ex.Message });
         }
     }
 

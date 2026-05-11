@@ -7,8 +7,11 @@ public interface IInvoiceRepositoryPort
 {
     Task<List<InvoiceRecord>> GetAllClientInvoicesAsync(int clientId, CancellationToken cancellationToken = default);
     Task<List<InvoiceRecord>> GetPendingInvoicesAsync(int clientId, CancellationToken cancellationToken = default);
-    Task<InvoiceRecord?> GetInvoiceAsync(int invoiceId, CancellationToken cancellationToken = default);
-    Task AddAsync(InvoiceRecord invoice, CancellationToken cancellationToken = default);
-    Task UpdateStatusAsync(int invoiceId, string status, CancellationToken cancellationToken = default);
+
+    Task<Invoice?> GetByIdAsync(int invoiceId, CancellationToken cancellationToken = default);
+
+    Task<int> AddAsync(Invoice invoice, CancellationToken cancellationToken = default);
+    Task UpdateAsync(Invoice invoice, CancellationToken cancellationToken = default);
+
     Task<List<TotalMembershipRevenueRow>> GetMonthlyRevenueByPlanAsync(CancellationToken cancellationToken = default);
 }

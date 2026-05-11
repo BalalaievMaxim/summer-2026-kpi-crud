@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using System.Text;
 using GymManagement.Application.Services;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Domain.Billing;
 using GymManagement.Domain.Classes;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Coaches;
@@ -40,6 +41,7 @@ builder.Services.AddScoped<ICoachRepository, CoachRepository>();
 
 builder.Services.AddScoped<ClassFactory>();
 builder.Services.AddScoped<EnrollmentFactory>();
+builder.Services.AddScoped<InvoiceFactory>();
 
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<ICoachService, CoachService>();
