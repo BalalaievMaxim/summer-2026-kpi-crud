@@ -1,5 +1,5 @@
 using FluentAssertions;
-using GymManagement.Application.Features.Auth.Commands.LoginClient;
+using GymManagement.Application.Features.Auth.Queries.LoginClient;
 using GymManagement.Application.Features.Clients.Commands.DeleteClient;
 using GymManagement.Application.Features.Clients.Commands.RegisterClient;
 using GymManagement.Application.Features.Clients.Commands.UpdateClient;
@@ -56,13 +56,13 @@ public sealed class ClientsAndCoachesHandlerTests
     [Fact]
     public async Task LoginClient_ValidCredentials_Should_ReturnClientDto()
     {
-        var handler = new LoginClientCommandHandler(_clientRepoMock.Object, _passwordHasher);
+        var handler = new LoginClientQueryHandler(_clientRepoMock.Object, _passwordHasher);
         var client = Client.Reconstitute(1, "John", "john@test.com", "+380671234567", _passwordHasher.Hash("pass1234"));
 
         _clientRepoMock.Setup(r => r.GetByEmailAsync("john@test.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(client);
 
-        var result = await handler.Handle(new LoginClientCommand("john@test.com", "pass1234"));
+        var result = await handler.Handle(new LoginClientQuery("john@test.com", "pass1234"));
 
         result.ClientId.Should().Be(1);
         result.Email.Should().Be("john@test.com");
@@ -71,13 +71,13 @@ public sealed class ClientsAndCoachesHandlerTests
     [Fact]
     public async Task LoginClient_WrongPassword_Should_ThrowDomainError()
     {
-        var handler = new LoginClientCommandHandler(_clientRepoMock.Object, _passwordHasher);
+        var handler = new LoginClientQueryHandler(_clientRepoMock.Object, _passwordHasher);
         var client = Client.Reconstitute(1, "John", "john@test.com", "+380671234567", _passwordHasher.Hash("pass1234"));
 
         _clientRepoMock.Setup(r => r.GetByEmailAsync("john@test.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(client);
 
-        var act = async () => await handler.Handle(new LoginClientCommand("john@test.com", "wrongpass"));
+        var act = async () => await handler.Handle(new LoginClientQuery("john@test.com", "wrongpass"));
 
         await act.Should().ThrowAsync<InvalidCredentialsError>();
     }

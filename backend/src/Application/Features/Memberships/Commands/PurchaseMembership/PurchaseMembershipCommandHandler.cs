@@ -37,7 +37,7 @@ public sealed class PurchaseMembershipCommandHandler(
             command.Notes,
             cancellationToken);
 
-        await invoiceRepository.AddAsync(invoice, cancellationToken);
+        invoiceRepository.Stage(invoice);
 
         var membership = Membership.PurchasePending(command.ClientId, plan, today);
         await membershipRepository.AddAsync(membership, cancellationToken);

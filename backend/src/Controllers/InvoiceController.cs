@@ -53,14 +53,11 @@ public sealed class InvoiceController : ControllerBase
     [ProducesResponseType(typeof(List<InvoiceResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendingInvoices(
         int clientId,
-        [FromServices] IQueryHandler<GetPendingInvoicesForClientQuery, List<InvoiceRecord>> queryHandler,
+        [FromServices] IQueryHandler<GetPendingInvoicesForClientQuery, List<InvoiceResponseDto>> queryHandler,
         CancellationToken cancellationToken)
     {
         var invoices = await queryHandler.Handle(new GetPendingInvoicesForClientQuery(clientId), cancellationToken);
-
-        var response = invoices.Select(MapToResponseDto).ToList();
-
-        return Ok(response);
+        return Ok(invoices);
     }
 
     [HttpGet("analytics/revenue-by-plan")]
@@ -70,19 +67,5 @@ public sealed class InvoiceController : ControllerBase
     {
         var analytics = await queryHandler.Handle(new GetMonthlyRevenueByPlanQuery(), cancellationToken);
         return Ok(analytics);
-    }
-
-    private static InvoiceResponseDto MapToResponseDto(InvoiceRecord invoice)
-    {
-        return new InvoiceResponseDto
-        {
-            InvoiceId = invoice.InvoiceId,
-            ClientId = invoice.ClientId,
-            Amount = invoice.Amount,
-            PaymentMethod = invoice.PaymentMethod ?? "Unknown",
-            Status = invoice.Status,
-            Date = invoice.Date,
-            Notes = invoice.Notes
-        };
     }
 }

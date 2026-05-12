@@ -106,11 +106,11 @@ public sealed class MembershipAndBillingHandlerTests
 
         await handler.Handle(new PurchaseMembershipCommand(1, 1, PaymentMethod.Card, "Notes"));
 
-        _invoiceRepoMock.Verify(r => r.AddAsync(It.Is<Invoice>(invoice =>
+        _invoiceRepoMock.Verify(r => r.Stage(It.Is<Invoice>(invoice =>
             invoice.ClientId == 1 &&
             invoice.Amount == 200m &&
             invoice.Status == PaymentStatus.Pending &&
-            invoice.Method == PaymentMethod.Card), It.IsAny<CancellationToken>()), Times.Once);
+            invoice.Method == PaymentMethod.Card)), Times.Once);
         _membershipRepoMock.Verify(r => r.AddAsync(It.Is<Membership>(membership =>
             membership.ClientId == 1 &&
             membership.PlanId == 1 &&
