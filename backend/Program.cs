@@ -121,6 +121,8 @@ builder.Services.AddScoped<IQueryHandler<GetCoachByIdQuery, CoachDto?>, GetCoach
 builder.Services.AddScoped<IQueryHandler<GetAllCoachesQuery, IReadOnlyList<CoachSummaryDto>>, GetAllCoachesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetCoachesBySpecializationQuery, IReadOnlyList<CoachSummaryDto>>, GetCoachesBySpecializationQueryHandler>();
 
+builder.Services.AddScoped<GymManagement.Application.Services.Interfaces.INotificationService, GymManagement.Infrastructure.Notifications.EmailNotificationService>();
+builder.Services.AddSingleton(typeof(GymManagement.Application.Abstractions.Logging.IAppLogger<>), typeof(GymManagement.Infrastructure.Logging.LoggerAdapter<>));
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
           ?? throw new InvalidOperationException("JWT options are not configured.");

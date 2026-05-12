@@ -1,4 +1,5 @@
 using FluentAssertions;
+using GymManagement.Application.Abstractions.Logging;
 using GymManagement.Application.Features.Auth.Queries.LoginClient;
 using GymManagement.Application.Features.Clients.Commands.DeleteClient;
 using GymManagement.Application.Features.Clients.Commands.RegisterClient;
@@ -12,6 +13,7 @@ using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Coaches;
 using GymManagement.Domain.Coaches.Errors;
 using GymManagement.Domain.Ports;
+using Microsoft.EntityFrameworkCore.Internal;
 using Moq;
 
 namespace GymManagement.Tests.Unit.Features.Clients;
@@ -22,13 +24,15 @@ public sealed class ClientsAndCoachesHandlerTests
     private readonly Mock<ICoachRepository> _coachRepoMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly TestPasswordHasher _passwordHasher = new();
+    private readonly Mock<INotificationService> _notificationServiceMock = new();
+    private readonly Mock<IAppLogger<RegisterClientCommandHandler>> _loggerMock = new();
 
     private readonly Mock<ITokenService> _tokenServiceMock = new();
 
     [Fact]
     public async Task RegisterClient_EmailFree_Should_CreateAndReturnId()
     {
-        var handler = new RegisterClientCommandHandler(_clientRepoMock.Object, _passwordHasher, _tokenServiceMock.Object);
+        var handler = new RegisterClientCommandHandler(_clientRepoMock.Object, _passwordHasher, _tokenServiceMock.Object,_notificationServiceMock.Object, _loggerMock.Object);
 
         _clientRepoMock.Setup(r => r.ExistsByEmailAsync("john@test.com", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -51,7 +55,7 @@ public sealed class ClientsAndCoachesHandlerTests
     [Fact]
     public async Task RegisterClient_EmailTaken_Should_ThrowDomainError()
     {
-        var handler = new RegisterClientCommandHandler(_clientRepoMock.Object, _passwordHasher, _tokenServiceMock.Object);
+        var handler = new RegisterClientCommandHandler(_clientRepoMock.Object, _passwordHasher, _tokenServiceMock.Object,_notificationServiceMock.Object, _loggerMock.Object);
 
         _clientRepoMock.Setup(r => r.ExistsByEmailAsync("taken@test.com", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
