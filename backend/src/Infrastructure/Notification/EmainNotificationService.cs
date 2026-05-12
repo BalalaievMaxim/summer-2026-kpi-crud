@@ -1,3 +1,4 @@
+using GymManagement.Application.Exceptions;
 using GymManagement.Application.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -16,15 +17,21 @@ public sealed class EmailNotificationService : INotificationService
     {
         _logger.LogInformation("START Sending email to {To}. Subject: {Subject}", to, subject);
 
-        await Task.Delay(1500, cancellationToken);
-
-        // Simulate a random failure with a 10% chance
-        if (Random.Shared.NextDouble() < 0.1)
+        try
         {
-            _logger.LogWarning("FAILED to send email to {To}. SMTP Server Timeout.", to);
-            throw new Exception("SMTP Server timeout.");
-        }
+            await Task.Delay(1500, cancellationToken);
 
-        _logger.LogInformation("SUCCESS Email sent to {To}.", to);
+            if (Random.Shared.NextDouble() < 0.1)
+            {
+                throw new TimeoutException("SMTP Server timeout.");
+            }
+
+            _logger.LogInformation("SUCCESS Email sent to {To}.", to);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "FAILED to send email to {To}.", to);
+            throw new NotificationException($"Failed to send email to {to}", ex);
+        }
     }
 }

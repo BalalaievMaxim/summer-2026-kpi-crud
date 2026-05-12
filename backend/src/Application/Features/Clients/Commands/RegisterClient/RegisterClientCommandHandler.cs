@@ -1,6 +1,7 @@
 using GymManagement.Application.Abstractions.Logging;
 using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.DTOs;
+using GymManagement.Application.Exceptions;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Clients.Errors;
@@ -25,17 +26,24 @@ public sealed class RegisterClientCommandHandler(
 
         var token = tokenService.CreateToken(clientId, client.Email.Value, "Client");
 
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(2));
+
         try
         {
             await notificationService.SendEmailAsync(
                 client.Email.Value,
                 "Welcome to IronPulse Gym!",
                 $"Hello {client.Name.Value}, your account is successfully created.",
-                cancellationToken);
+                timeoutCts.Token);
         }
-        catch (Exception ex)
+        catch (NotificationException ex)
         {
-            logger.LogError(ex, "Synchronous notification failed for client {0}, but client was registered.", clientId);
+            logger.LogWarning("Synchronous notification failed for client {0}. Reason: {1}", clientId, ex.Message);
+        }
+        catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning("Synchronous notification timed out for client {0}. Reason: {1}", clientId, ex.Message);
         }
 
         return new AuthResultDto(
