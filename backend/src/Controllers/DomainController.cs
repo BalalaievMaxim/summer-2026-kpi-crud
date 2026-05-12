@@ -1,7 +1,8 @@
 using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Features.Classes.Queries.GetScheduleForDate;
-using GymManagement.Application.Services.Interfaces;
+using GymManagement.Application.Features.Coaches.Queries.GetAllCoaches;
+using GymManagement.Application.Features.Coaches.ReadModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,13 +11,15 @@ namespace GymManagement.Presentation.Controllers;
 [ApiController]
 [Route("api/test-domain2")]
 [Authorize]
-public sealed class DomainController(ICoachService coachService) : ControllerBase
+public sealed class DomainController : ControllerBase
 {
     [HttpGet("coaches")]
-    public async Task<IActionResult> GetAllCoaches()
+    public async Task<IActionResult> GetAllCoaches(
+        [FromServices] IQueryHandler<GetAllCoachesQuery, IReadOnlyList<CoachSummaryDto>> queryHandler,
+        CancellationToken cancellationToken)
     {
-        var coaches = await coachService.GetAllAsync();
-        return Ok(coaches.Select(c => new { id = c.Id, name = c.Name.Value, specialization = c.Specialization.Value }));
+        var coaches = await queryHandler.Handle(new GetAllCoachesQuery(), cancellationToken);
+        return Ok(coaches);
     }
 
     [HttpGet("schedule/{date}")]

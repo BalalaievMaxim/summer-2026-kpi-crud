@@ -12,7 +12,7 @@ public interface IClientRepository
     Task<bool> HasActiveEnrollmentsAsync(int clientId, CancellationToken cancellationToken = default);
     Task<bool> HasActiveMembershipsAsync(int clientId, CancellationToken cancellationToken = default);
 
-    Task<Client> AddAsync(Client client, CancellationToken cancellationToken = default);
+    Task<int> AddAsync(Client client, CancellationToken cancellationToken = default);
     Task UpdateAsync(Client client, CancellationToken cancellationToken = default);
     Task DeleteAsync(int id, CancellationToken cancellationToken = default);
 }

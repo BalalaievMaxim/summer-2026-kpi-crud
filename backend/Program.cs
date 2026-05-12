@@ -4,6 +4,7 @@ using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Services;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Application.DTOs;
+using GymManagement.Application.Features.Auth.Commands.LoginClient;
 using GymManagement.Application.Features.Classes.Commands.CreateClass;
 using GymManagement.Application.Features.Classes.Commands.DeleteClass;
 using GymManagement.Application.Features.Classes.Commands.RescheduleClass;
@@ -13,6 +14,20 @@ using GymManagement.Application.Features.Classes.Queries.GetCoachEfficiencyAnaly
 using GymManagement.Application.Features.Classes.Queries.GetCoachWorkload;
 using GymManagement.Application.Features.Classes.Queries.GetScheduleForDate;
 using GymManagement.Application.Features.Classes.Queries.GetScheduleForWeek;
+using GymManagement.Application.Features.Clients.Commands.DeleteClient;
+using GymManagement.Application.Features.Clients.Commands.RegisterClient;
+using GymManagement.Application.Features.Clients.Commands.UpdateClient;
+using GymManagement.Application.Features.Clients.Queries.GetClientActivityAnalytics;
+using GymManagement.Application.Features.Clients.Queries.GetClientById;
+using GymManagement.Application.Features.Clients.Queries.SearchClients;
+using GymManagement.Application.Features.Clients.ReadModels;
+using GymManagement.Application.Features.Coaches.Commands.DeleteCoach;
+using GymManagement.Application.Features.Coaches.Commands.RegisterCoach;
+using GymManagement.Application.Features.Coaches.Commands.UpdateCoachSpecialization;
+using GymManagement.Application.Features.Coaches.Queries.GetAllCoaches;
+using GymManagement.Application.Features.Coaches.Queries.GetCoachById;
+using GymManagement.Application.Features.Coaches.Queries.GetCoachesBySpecialization;
+using GymManagement.Application.Features.Coaches.ReadModels;
 using GymManagement.Application.Features.Enrollments.Commands.CreateEnrollment;
 using GymManagement.Application.Features.Invoices.Commands.CreateInvoice;
 using GymManagement.Application.Features.Invoices.Commands.MarkInvoicePaid;
@@ -70,8 +85,6 @@ builder.Services.AddScoped<EnrollmentFactory>();
 builder.Services.AddScoped<InvoiceFactory>();
 
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
-builder.Services.AddScoped<IClientService, ClientService>();
-builder.Services.AddScoped<ICoachService, CoachService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
 builder.Services.AddScoped<ICommandHandler<CreateClassCommand, int>, CreateClassCommandHandler>();
@@ -94,6 +107,19 @@ builder.Services.AddScoped<ICommandHandler<MarkInvoicePaidCommand>, MarkInvoiceP
 builder.Services.AddScoped<IQueryHandler<GetPendingInvoicesForClientQuery, List<InvoiceRecord>>, GetPendingInvoicesForClientQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetMonthlyRevenueByPlanQuery, List<TotalMembershipRevenueRow>>, GetMonthlyRevenueByPlanQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateEnrollmentCommand, EnrollmentResultDto>, CreateEnrollmentCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<RegisterClientCommand, int>, RegisterClientCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<LoginClientCommand, ClientDto>, LoginClientCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateClientCommand>, UpdateClientCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteClientCommand>, DeleteClientCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetClientByIdQuery, ClientDto?>, GetClientByIdQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<SearchClientsQuery, IReadOnlyList<ClientSummaryDto>>, SearchClientsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetClientActivityAnalyticsQuery, List<ClientActivityRow>>, GetClientActivityAnalyticsQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<RegisterCoachCommand, int>, RegisterCoachCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteCoachCommand>, DeleteCoachCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateCoachSpecializationCommand>, UpdateCoachSpecializationCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCoachByIdQuery, CoachDto?>, GetCoachByIdQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAllCoachesQuery, IReadOnlyList<CoachSummaryDto>>, GetAllCoachesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCoachesBySpecializationQuery, IReadOnlyList<CoachSummaryDto>>, GetCoachesBySpecializationQueryHandler>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()

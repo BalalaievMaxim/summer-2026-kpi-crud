@@ -21,7 +21,7 @@ public class ClientRepository(GymManagementContext context) : IClientRepository,
     public Task<bool> HasActiveMembershipsAsync(int clientId, CancellationToken ct = default)
         => context.Memberships.AnyAsync(m => m.ClientId == clientId && m.IsActive, ct);
 
-    public async Task<Client> AddAsync(Client client, CancellationToken ct = default)
+    public async Task<int> AddAsync(Client client, CancellationToken ct = default)
     {
         var entity = new Entities.Client
         {
@@ -32,7 +32,8 @@ public class ClientRepository(GymManagementContext context) : IClientRepository,
             CreatedAt = DateTime.UtcNow
         };
         await context.Clients.AddAsync(entity, ct);
-        return ToDomain(entity);
+        await context.SaveChangesAsync(ct);
+        return entity.ClientId;
     }
 
     public async Task<Client?> GetByIdAsync(int id, CancellationToken ct = default)
