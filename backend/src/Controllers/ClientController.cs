@@ -21,29 +21,16 @@ public class ClientController(ITokenService tokenService) : ControllerBase
 {
     [HttpPost("register")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(
         [FromBody] CreateClientDto dto,
-        [FromServices] ICommandHandler<RegisterClientCommand, int> commandHandler,
-        [FromServices] IQueryHandler<GetClientByIdQuery, ClientDto?> queryHandler,
+        [FromServices] ICommandHandler<RegisterClientCommand, AuthResultDto> commandHandler,
         CancellationToken cancellationToken)
     {
-        var clientId = await commandHandler.Handle(
+        var authResult = await commandHandler.Handle(
             new RegisterClientCommand(dto.Name, dto.Email, dto.Phone, dto.Password),
             cancellationToken);
 
-        var client = await queryHandler.Handle(new GetClientByIdQuery(clientId), cancellationToken);
-        var token = tokenService.CreateToken(clientId, client!.Email, "Client");
-
-        return CreatedAtAction(nameof(Register), new { id = clientId }, new
-        {
-            clientId = client.ClientId,
-            client.Name,
-            client.Email,
-            client.Phone,
-            token
-        });
+        return CreatedAtAction(nameof(Register), new { id = authResult.ClientId }, authResult);
     }
 
     [HttpPost("login")]

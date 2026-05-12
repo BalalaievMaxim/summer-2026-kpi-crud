@@ -12,9 +12,9 @@ public sealed class CreateEnrollmentCommandHandler(
     IEnrollmentRepositoryPort enrollmentRepository,
     IClientRepository clientRepository,
     IMembershipRepositoryPort membershipRepository,
-    EnrollmentFactory enrollmentFactory) : ICommandHandler<CreateEnrollmentCommand, EnrollmentResultDto>
+    EnrollmentFactory enrollmentFactory) : ICommandHandler<CreateEnrollmentCommand, int>
 {
-    public async Task<EnrollmentResultDto> Handle(CreateEnrollmentCommand command, CancellationToken cancellationToken = default)
+    public async Task<int> Handle(CreateEnrollmentCommand command, CancellationToken cancellationToken = default)
     {
         if (!await clientRepository.ExistsAsync(command.ClientId, cancellationToken))
             throw new ClientNotFoundError(command.ClientId);
@@ -27,8 +27,7 @@ public sealed class CreateEnrollmentCommandHandler(
             throw new ClientHasNoActiveMembershipError(command.ClientId);
 
         var enrollment = await enrollmentFactory.CreateAsync(command.ClientId, command.ClassId, DateTimeOffset.UtcNow, cancellationToken);
-        var enrollmentId = await enrollmentRepository.AddAsync(enrollment, cancellationToken);
-
-        return new EnrollmentResultDto(enrollmentId, command.ClientId, command.ClassId);
-    }
+        return await enrollmentRepository.AddAsync(enrollment, cancellationToken);
 }
+    }
+
