@@ -3,6 +3,7 @@ using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Features.Coaches.Commands.DeleteCoach;
 using GymManagement.Application.Features.Coaches.Commands.RegisterCoach;
 using GymManagement.Application.Features.Coaches.Commands.UpdateCoachSpecialization;
+using GymManagement.Application.Features.Coaches.Queries.GetAllCoaches;
 using GymManagement.Application.Features.Coaches.Queries.GetCoachById;
 using GymManagement.Application.Features.Coaches.Queries.GetCoachesBySpecialization;
 using GymManagement.Application.Features.Coaches.ReadModels;
@@ -16,6 +17,15 @@ namespace GymManagement.Presentation.Controllers;
 [Authorize]
 public class CoachController : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromServices] IQueryHandler<GetAllCoachesQuery, IReadOnlyList<CoachSummaryDto>> queryHandler,
+        CancellationToken cancellationToken)
+    {
+        var coaches = await queryHandler.Handle(new GetAllCoachesQuery(), cancellationToken);
+        return Ok(coaches);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(
         int id,
