@@ -5,10 +5,11 @@ using GymManagement.Application.Features.Classes.Commands.DeleteClass;
 using GymManagement.Application.Features.Classes.Commands.RescheduleClass;
 using GymManagement.Application.Features.Classes.Queries.GetCoachWorkload;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Application.Exceptions;
+using GymManagement.Application.Features.Coaches.ReadModels;
 using GymManagement.Domain.Classes;
 using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Coaches;
-using GymManagement.Domain.Coaches.Errors;
 using GymManagement.Domain.Ports;
 using GymManagement.Domain.Shared.ValueObjects;
 using Moq;
@@ -22,6 +23,7 @@ public sealed class ClassHandlerTests
     private readonly Mock<IClassRepositoryPort> _classRepoMock = new();
     private readonly Mock<IClassScheduleRepository> _classScheduleRepoMock = new();
     private readonly Mock<ICoachRepository> _coachRepoMock = new();
+    private readonly Mock<ICoachReadRepository> _coachReadRepoMock = new();
     private readonly Mock<IClassTypeRepositoryPort> _classTypeRepoMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
 
@@ -49,7 +51,7 @@ public sealed class ClassHandlerTests
 
         _coachWorkloadHandler = new GetCoachWorkloadQueryHandler(
             _classScheduleRepoMock.Object,
-            _coachRepoMock.Object);
+            _coachReadRepoMock.Object);
     }
 
     private static GymClassDetails Details(
@@ -84,8 +86,13 @@ public sealed class ClassHandlerTests
     }
 
     private void SetupCoach(int coachId, string name = "Test Coach")
-        => _coachRepoMock.Setup(r => r.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
+    {
+        _coachRepoMock.Setup(r => r.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(DomainCoach.Reconstitute(coachId, name, "coach@test.com", "Yoga", "pass1234"));
+
+        _coachReadRepoMock.Setup(r => r.GetByIdAsync(coachId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CoachDto(coachId, name, "coach@test.com", "Yoga"));
+    }
 
     [Fact]
     public async Task CreateClass_ValidData_Should_ReturnIdAndPersistAggregate()
@@ -245,8 +252,11 @@ public sealed class ClassHandlerTests
     [Fact]
     public async Task GetCoachWorkload_MissingCoach_Should_ThrowDomainError()
     {
+        _coachReadRepoMock.Setup(r => r.GetByIdAsync(404, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoachDto?)null);
+
         var act = async () => await _coachWorkloadHandler.Handle(new GetCoachWorkloadQuery(404, DateTime.UtcNow, DateTime.UtcNow.AddDays(1)));
 
-        await act.Should().ThrowAsync<CoachNotFoundError>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 }
