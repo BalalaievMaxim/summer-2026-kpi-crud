@@ -20,7 +20,6 @@ public sealed class LoginClientQueryHandler(
         if (!client.MatchesPassword(query.Password, passwordHasher))
             throw new InvalidCredentialsError();
 
-        // Application шар вирішує, як створити сесію
         var token = tokenService.CreateToken(client.Id, client.Email.Value, "Client");
 
         return new AuthResultDto(
