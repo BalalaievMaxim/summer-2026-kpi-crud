@@ -1,7 +1,18 @@
 using System.Text.Json.Serialization;
 using System.Text;
+using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Services;
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Application.DTOs;
+using GymManagement.Application.Features.Classes.Commands.CreateClass;
+using GymManagement.Application.Features.Classes.Commands.DeleteClass;
+using GymManagement.Application.Features.Classes.Commands.RescheduleClass;
+using GymManagement.Application.Features.Classes.Queries.GetClassAttendanceAnalytics;
+using GymManagement.Application.Features.Classes.Queries.GetClassById;
+using GymManagement.Application.Features.Classes.Queries.GetCoachEfficiencyAnalytics;
+using GymManagement.Application.Features.Classes.Queries.GetCoachWorkload;
+using GymManagement.Application.Features.Classes.Queries.GetScheduleForDate;
+using GymManagement.Application.Features.Classes.Queries.GetScheduleForWeek;
 using GymManagement.Domain.Billing;
 using GymManagement.Domain.Classes;
 using GymManagement.Domain.Clients;
@@ -51,11 +62,20 @@ builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<ICoachService, CoachService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
+builder.Services.AddScoped<ICommandHandler<CreateClassCommand, int>, CreateClassCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<RescheduleClassCommand>, RescheduleClassCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteClassCommand>, DeleteClassCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetClassByIdQuery, GymClassDetails?>, GetClassByIdQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetScheduleForDateQuery, IReadOnlyList<GymClassDetails>>, GetScheduleForDateQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetScheduleForWeekQuery, IReadOnlyList<GymClassDetails>>, GetScheduleForWeekQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetClassAttendanceAnalyticsQuery, IReadOnlyList<ClassAttendanceRow>>, GetClassAttendanceAnalyticsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCoachWorkloadQuery, CoachWorkloadRow>, GetCoachWorkloadQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCoachEfficiencyAnalyticsQuery, List<CoachEfficiencyRow>>, GetCoachEfficiencyAnalyticsQueryHandler>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
