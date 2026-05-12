@@ -36,7 +36,7 @@ async function request(endpoint, options = {}) {
 }
 
 const CoachAPI = {
-    getAll: () => request('/api/test-domain2/coaches'),
+    getAll: () => request('/api/Coach'),
     getById: (id) => request(`/api/Coach/${id}`),
     getBySpecialization: (spec) => request(`/api/Coach/specialization/${encodeURIComponent(spec)}`),
     delete: (id) => request(`/api/Coach/${id}`, { method: 'DELETE' }),

@@ -10,14 +10,7 @@ public static class DbInitializer
     {
         static string Hash(string password) => BCrypt.Net.BCrypt.HashPassword(password);
 
-        try
-        {
-            await context.Database.MigrateAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Migration Error: {ex.Message}");
-        }
+        await context.Database.MigrateAsync();
 
         if (!context.Facilityzones.Any())
         {

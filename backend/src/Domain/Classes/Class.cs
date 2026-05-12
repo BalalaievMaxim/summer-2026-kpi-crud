@@ -70,6 +70,9 @@ public sealed class Class : AggregateRoot<int>
 
     public void Reschedule(TimeRange newRange, DateTimeOffset now)
     {
+        if (Schedule.IsInPast(now))
+            throw new ClassInPastError();
+
         if (newRange.IsInPast(now))
             throw new ClassInPastError();
 

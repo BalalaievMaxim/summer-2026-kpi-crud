@@ -9,7 +9,7 @@ public class CoachRepository(GymManagementContext context) : ICoachRepository
     private static Coach ToDomain(Entities.Coach e)
         => Coach.Reconstitute(e.CoachId, e.Name, e.Email, e.Specialization, e.Password);
 
-    public async Task<Coach> AddAsync(Coach coach, CancellationToken ct = default)
+    public async Task<int> AddAsync(Coach coach, CancellationToken ct = default)
     {
         var entity = new Entities.Coach
         {
@@ -20,7 +20,8 @@ public class CoachRepository(GymManagementContext context) : ICoachRepository
             CreatedAt = DateTime.UtcNow
         };
         context.Coaches.Add(entity);
-        return ToDomain(entity);
+        await context.SaveChangesAsync(ct);
+        return entity.CoachId;
     }
 
     public async Task<Coach?> GetByIdAsync(int id, CancellationToken ct = default)

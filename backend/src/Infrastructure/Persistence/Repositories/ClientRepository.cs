@@ -1,14 +1,11 @@
-using GymManagement.Application.DTOs;
-using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Ports;
 using GymManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System.Runtime.CompilerServices;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public class ClientRepository(GymManagementContext context) : IClientRepository, IClientAnalyticsRepository
+public class ClientRepository(GymManagementContext context) : IClientRepository
 {
     
     private static Client ToDomain(Entities.Client e)
@@ -21,7 +18,7 @@ public class ClientRepository(GymManagementContext context) : IClientRepository,
     public Task<bool> HasActiveMembershipsAsync(int clientId, CancellationToken ct = default)
         => context.Memberships.AnyAsync(m => m.ClientId == clientId && m.IsActive, ct);
 
-    public async Task<Client> AddAsync(Client client, CancellationToken ct = default)
+    public async Task<int> AddAsync(Client client, CancellationToken ct = default)
     {
         var entity = new Entities.Client
         {
@@ -32,7 +29,8 @@ public class ClientRepository(GymManagementContext context) : IClientRepository,
             CreatedAt = DateTime.UtcNow
         };
         await context.Clients.AddAsync(entity, ct);
-        return ToDomain(entity);
+        await context.SaveChangesAsync(ct);
+        return entity.ClientId;
     }
 
     public async Task<Client?> GetByIdAsync(int id, CancellationToken ct = default)
@@ -96,32 +94,4 @@ public class ClientRepository(GymManagementContext context) : IClientRepository,
             context.Clients.Remove(entity);
     }
 
-    public async Task<List<ClientActivityRow>> GetClientActivityAnalyticsAsync(CancellationToken cancellationToken = default)
-    {
-        const string sql = """
-            WITH ClientEnrollmentStats AS (
-                SELECT
-                    c.client_id,
-                    c.name,
-                    c.email,
-                    COUNT(e.enrollment_id) AS TotalEnrollments
-                FROM client c
-                LEFT JOIN enrollment e ON c.client_id = e.client_id
-                WHERE e.registration_time >= NOW() - INTERVAL '1 month'
-                GROUP BY c.client_id, c.name, c.email
-            )
-            SELECT
-                ses.client_id AS "ClientId",
-                ses.name AS "Name",
-                ses.email AS "Email",
-                ses.TotalEnrollments AS "TotalEnrollments",
-                RANK() OVER (ORDER BY ses.TotalEnrollments DESC) AS "ClientRank"
-            FROM ClientEnrollmentStats ses
-            ORDER BY "ClientRank" ASC, "TotalEnrollments" DESC;
-            """;
-
-        return await context.Database
-            .SqlQuery<ClientActivityRow>(FormattableStringFactory.Create(sql))
-            .ToListAsync(cancellationToken);
-    }
 }

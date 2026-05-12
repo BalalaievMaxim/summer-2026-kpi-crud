@@ -10,5 +10,6 @@ public interface IInvoiceRepositoryPort
     Task<Invoice?> GetByIdAsync(int invoiceId, CancellationToken cancellationToken = default);
 
     Task<int> AddAsync(Invoice invoice, CancellationToken cancellationToken = default);
+    void Stage(Invoice invoice);
     Task UpdateAsync(Invoice invoice, CancellationToken cancellationToken = default);
 }

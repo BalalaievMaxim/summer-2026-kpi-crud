@@ -4,6 +4,7 @@ using FluentAssertions;
 using GymManagement.Infrastructure.DTOs;
 using GymManagement.Application.DTOs;
 using GymManagement.Infrastructure.Persistence.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Tests.Integration;
 
@@ -32,17 +33,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var membership = new Membership
-        {
-            ClientId = client.ClientId,
-            PlanId = plan.PlanId,
-            IsActive = true,
-            StartDate = today.AddDays(-5),
-            EndDate = today.AddDays(25)
-        };
-        Context.Memberships.Add(membership);
-        await Context.SaveChangesAsync();
+        await SeedActiveMembershipAsync(client.ClientId, plan.PlanId);
 
         var dto = new CreateEnrollmentDto { ClientId = client.ClientId, ClassId = gymClass.ClassId };
 
@@ -69,7 +60,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
             CoachId = coach.CoachId,
             StartTime = DateTime.UtcNow.AddDays(1),
             EndTime = DateTime.UtcNow.AddDays(1).AddHours(1),
-            Capacity = 1 
+            Capacity = 1
         };
         Context.Classes.Add(gymClass);
         await Context.SaveChangesAsync();
@@ -79,9 +70,8 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         Context.Clients.AddRange(client1, client2);
         await Context.SaveChangesAsync();
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        Context.Memberships.Add(new Membership { ClientId = client1.ClientId, PlanId = plan.PlanId, IsActive = true, StartDate = today, EndDate = today.AddMonths(1) });
-        Context.Memberships.Add(new Membership { ClientId = client2.ClientId, PlanId = plan.PlanId, IsActive = true, StartDate = today, EndDate = today.AddMonths(1) });
+        await SeedActiveMembershipAsync(client1.ClientId, plan.PlanId);
+        await SeedActiveMembershipAsync(client2.ClientId, plan.PlanId);
 
         Context.Enrollments.Add(new Enrollment { ClientId = client1.ClientId, ClassId = gymClass.ClassId });
         await Context.SaveChangesAsync();
@@ -118,16 +108,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        Context.Memberships.Add(new Membership
-        {
-            ClientId = client.ClientId,
-            PlanId = plan.PlanId,
-            IsActive = false,
-            StartDate = today,
-            EndDate = today.AddMonths(1)
-        });
-        await Context.SaveChangesAsync();
+        await SeedPendingMembershipAsync(client.ClientId, plan.PlanId);
 
         var dto = new CreateEnrollmentDto { ClientId = client.ClientId, ClassId = gymClass.ClassId };
 
@@ -161,15 +142,11 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 
+        await SeedActiveMembershipAsync(client.ClientId, plan.PlanId);
+
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        Context.Memberships.Add(new Membership
-        {
-            ClientId = client.ClientId,
-            PlanId = plan.PlanId,
-            IsActive = true,
-            StartDate = today.AddMonths(-2),
-            EndDate = today.AddDays(-1)
-        });
+        var membership = await Context.Memberships.FirstAsync(m => m.ClientId == client.ClientId);
+        membership.EndDate = today.AddDays(-1);
         await Context.SaveChangesAsync();
 
         var dto = new CreateEnrollmentDto { ClientId = client.ClientId, ClassId = gymClass.ClassId };
@@ -204,8 +181,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        Context.Memberships.Add(new Membership { ClientId = client.ClientId, PlanId = plan.PlanId, IsActive = true, StartDate = today, EndDate = today.AddMonths(1) });
+        await SeedActiveMembershipAsync(client.ClientId, plan.PlanId);
 
         Context.Enrollments.Add(new Enrollment { ClientId = client.ClientId, ClassId = gymClass.ClassId });
         await Context.SaveChangesAsync();

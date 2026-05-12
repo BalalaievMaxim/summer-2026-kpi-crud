@@ -1,7 +1,14 @@
 using GymManagement.Application.DTOs;
+using GymManagement.Application.Abstractions.Messaging;
+using GymManagement.Application.Features.Auth.Queries.LoginClient;
+using GymManagement.Application.Features.Clients.Commands.DeleteClient;
+using GymManagement.Application.Features.Clients.Commands.RegisterClient;
+using GymManagement.Application.Features.Clients.Commands.UpdateClient;
+using GymManagement.Application.Features.Clients.Queries.GetClientActivityAnalytics;
+using GymManagement.Application.Features.Clients.Queries.GetClientById;
+using GymManagement.Application.Features.Clients.Queries.SearchClients;
+using GymManagement.Application.Features.Clients.ReadModels;
 using GymManagement.Application.Services.Interfaces;
-using GymManagement.Domain.Clients.Errors;
-using GymManagement.Domain.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,44 +17,32 @@ namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/clients")]
-public class ClientController(IClientService clientService, ITokenService tokenService) : ControllerBase
+public class ClientController(ITokenService tokenService) : ControllerBase
 {
     [HttpPost("register")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] CreateClientDto dto)
+    public async Task<IActionResult> Register(
+        [FromBody] CreateClientDto dto,
+        [FromServices] ICommandHandler<RegisterClientCommand, AuthResultDto> commandHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            var client = await clientService.RegisterClientAsync(dto);
-            var token = tokenService.CreateToken(client.Id, client.Email.Value, "Client");
-            return CreatedAtAction(nameof(Register), new { id = client.Id }, new
-            {
-                clientId = client.Id,
-                name = client.Name.Value,
-                email = client.Email.Value,
-                phone = client.Phone.Value,
-                token
-            });
-        }
-        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+        var authResult = await commandHandler.Handle(
+            new RegisterClientCommand(dto.Name, dto.Email, dto.Phone, dto.Password),
+            cancellationToken);
+
+        return CreatedAtAction(nameof(Register), new { id = authResult.ClientId }, authResult);
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    [ProducesResponseType(typeof(AuthResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Login(
+        [FromBody] LoginDto dto,
+        [FromServices] IQueryHandler<LoginClientQuery, AuthResultDto> queryHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            var client = await clientService.LoginClientAsync(dto.Email, dto.Password);
-            var token = tokenService.CreateToken(client.Id, client.Email.Value, "Client");
-            return Ok(new { clientId = client.Id, name = client.Name.Value, email = client.Email.Value, phone = client.Phone.Value, token });
-        }
-        catch (InvalidCredentialsError ex) { return Unauthorized(new { code = ex.Code, error = ex.Message }); }
-        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+        var authResult = await queryHandler.Handle(new LoginClientQuery(dto.Email, dto.Password), cancellationToken);
+        return Ok(authResult);
     }
 
     [HttpPut("{clientId}")]
@@ -55,62 +50,64 @@ public class ClientController(IClientService clientService, ITokenService tokenS
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateClient(int clientId, [FromBody] UpdateClientDto dto)
+    public async Task<IActionResult> UpdateClient(
+        int clientId,
+        [FromBody] UpdateClientDto dto,
+        [FromServices] ICommandHandler<UpdateClientCommand> commandHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            await clientService.UpdateClientAsync(clientId, dto);
-            return NoContent();
-        }
-        catch (ClientNotFoundError ex) { return NotFound(new { code = ex.Code, error = ex.Message }); }
-        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+        await commandHandler.Handle(new UpdateClientCommand(clientId, dto.Email, dto.Phone), cancellationToken);
+        return NoContent();
     }
 
     [HttpDelete("{clientId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteClient(int clientId)
+    public async Task<IActionResult> DeleteClient(
+        int clientId,
+        [FromServices] ICommandHandler<DeleteClientCommand> commandHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            await clientService.DeleteClientAsync(clientId);
-            return NoContent();
-        }
-        catch (ClientNotFoundError ex) { return NotFound(new { code = ex.Code, error = ex.Message }); }
-        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+        await commandHandler.Handle(new DeleteClientCommand(clientId), cancellationToken);
+        return NoContent();
     }
 
     [HttpGet("search")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SearchClients([FromQuery] string searchTerm)
+    public async Task<IActionResult> SearchClients(
+        [FromQuery] string searchTerm,
+        [FromServices] IQueryHandler<SearchClientsQuery, IReadOnlyList<ClientSummaryDto>> queryHandler,
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
-            return BadRequest(new { error = "Search term cannot be empty." });
-
-        var clients = await clientService.SearchClientsAsync(searchTerm);
-        return Ok(clients.Select(c => new { clientId = c.Id, name = c.Name.Value, email = c.Email.Value }));
+        var clients = await queryHandler.Handle(new SearchClientsQuery(searchTerm), cancellationToken);
+        return Ok(clients);
     }
 
     [HttpGet("{clientId}/history")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetClientHistory(int clientId)
+    public async Task<IActionResult> GetClientHistory(
+        int clientId,
+        [FromServices] IQueryHandler<GetClientByIdQuery, ClientDto?> queryHandler,
+        CancellationToken cancellationToken)
     {
-        var client = await clientService.GetByIdAsync(clientId);
+        var client = await queryHandler.Handle(new GetClientByIdQuery(clientId), cancellationToken);
         if (client is null) return NotFound();
-        return Ok(new { id = client.Id, name = client.Name.Value, email = client.Email.Value, phone = client.Phone.Value });
+        return Ok(client);
     }
 
     [HttpGet("analytics/activity")]
     [Authorize]
     [ProducesResponseType(typeof(List<ClientActivityRow>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<ClientActivityRow>>> GetClientActivityAnalytics()
+    public async Task<ActionResult<List<ClientActivityRow>>> GetClientActivityAnalytics(
+        [FromServices] IQueryHandler<GetClientActivityAnalyticsQuery, List<ClientActivityRow>> queryHandler,
+        CancellationToken cancellationToken)
     {
-        var analytics = await clientService.GetClientActivityAnalyticsAsync();
+        var analytics = await queryHandler.Handle(new GetClientActivityAnalyticsQuery(), cancellationToken);
         return Ok(analytics);
     }
 }
