@@ -1,19 +1,14 @@
 using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.DTOs;
-using GymManagement.Domain.Memberships;
-using GymManagement.Domain.Ports;
+using GymManagement.Application.Services.Interfaces;
 
 namespace GymManagement.Application.Features.MembershipPlans.Queries.GetMembershipPlans;
 
-public sealed class GetMembershipPlansQueryHandler(IMembershipPlanRepositoryPort membershipPlanRepository)
+public sealed class GetMembershipPlansQueryHandler(IMembershipPlanReadRepository membershipPlanReadRepository)
     : IQueryHandler<GetMembershipPlansQuery, List<MembershipPlanDto>>
 {
     public async Task<List<MembershipPlanDto>> Handle(GetMembershipPlansQuery query, CancellationToken cancellationToken = default)
     {
-        var plans = await membershipPlanRepository.GetPlansAsync(query.MinPrice, query.MaxPrice, cancellationToken);
-        return plans.Select(ToDto).ToList();
+        return await membershipPlanReadRepository.GetPlansAsync(query.MinPrice, query.MaxPrice, cancellationToken);
     }
-
-    private static MembershipPlanDto ToDto(MembershipPlan plan)
-        => new(plan.Id, plan.Name, plan.DurationMonths, plan.Price.Amount);
 }

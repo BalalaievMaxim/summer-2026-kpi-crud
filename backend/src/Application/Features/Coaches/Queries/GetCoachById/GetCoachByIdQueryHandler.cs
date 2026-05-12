@@ -1,15 +1,14 @@
 using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Features.Coaches.ReadModels;
-using GymManagement.Domain.Coaches;
+using GymManagement.Application.Services.Interfaces;
 
 namespace GymManagement.Application.Features.Coaches.Queries.GetCoachById;
 
-public sealed class GetCoachByIdQueryHandler(ICoachRepository coachRepository)
+public sealed class GetCoachByIdQueryHandler(ICoachReadRepository coachReadRepository)
     : IQueryHandler<GetCoachByIdQuery, CoachDto?>
 {
     public async Task<CoachDto?> Handle(GetCoachByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var coach = await coachRepository.GetByIdAsync(query.CoachId, cancellationToken);
-        return coach is null ? null : CoachMappings.ToDto(coach);
+        return await coachReadRepository.GetByIdAsync(query.CoachId, cancellationToken);
     }
 }

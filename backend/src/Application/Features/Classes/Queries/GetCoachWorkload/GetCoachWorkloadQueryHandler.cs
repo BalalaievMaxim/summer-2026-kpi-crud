@@ -1,19 +1,18 @@
 using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.DTOs;
+using GymManagement.Application.Exceptions;
 using GymManagement.Application.Services.Interfaces;
-using GymManagement.Domain.Coaches;
-using GymManagement.Domain.Coaches.Errors;
 
 namespace GymManagement.Application.Features.Classes.Queries.GetCoachWorkload;
 
 public sealed class GetCoachWorkloadQueryHandler(
     IClassScheduleRepository classScheduleRepository,
-    ICoachRepository coachRepository) : IQueryHandler<GetCoachWorkloadQuery, CoachWorkloadRow>
+    ICoachReadRepository coachReadRepository) : IQueryHandler<GetCoachWorkloadQuery, CoachWorkloadRow>
 {
     public async Task<CoachWorkloadRow> Handle(GetCoachWorkloadQuery query, CancellationToken cancellationToken = default)
     {
-        var coach = await coachRepository.GetByIdAsync(query.CoachId, cancellationToken)
-            ?? throw new CoachNotFoundError(query.CoachId);
+        var coach = await coachReadRepository.GetByIdAsync(query.CoachId, cancellationToken)
+            ?? throw new NotFoundException($"Coach with ID {query.CoachId} not found.");
 
         var classes = await classScheduleRepository.GetClassesByCoachAsync(
             query.CoachId,
@@ -29,7 +28,7 @@ public sealed class GetCoachWorkloadQueryHandler(
 
         return new CoachWorkloadRow(
             query.CoachId,
-            coach.Name.Value,
+            coach.Name,
             list.Count,
             (int)totalHours,
             averageSize);

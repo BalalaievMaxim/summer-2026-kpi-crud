@@ -54,8 +54,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
-
-
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,6 +65,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IMembershipRepositoryPort, MembershipRepository>();
 builder.Services.AddScoped<IMembershipPlanRepositoryPort, MembershipPlanRepository>();
+builder.Services.AddScoped<IMembershipPlanReadRepository, MembershipPlanReadRepository>();
 builder.Services.AddScoped<IInvoiceRepositoryPort, InvoiceRepository>();
 builder.Services.AddScoped<IInvoiceAnalyticsRepository, InvoiceAnalyticsRepository>();
 builder.Services.AddScoped<IClassTypeRepositoryPort, ClassTypeRepository>();
