@@ -1,5 +1,4 @@
-using GymManagement.Domain.Classes;
-using GymManagement.Domain.Queries;
+using GymManagement.Application.DTOs;
 
 namespace GymManagement.Application.Services.Interfaces;
 

@@ -3,13 +3,13 @@ using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Ports;
-using GymManagement.Domain.Queries;
 
 namespace GymManagement.Application.Services;
 
 public sealed class ClientService(
     IClientRepository clientRepository,
     IClientAnalyticsRepository analyticsRepository,
+    IPasswordHasher passwordHasher,
     IUnitOfWork unitOfWork) : IClientService
 {
     public async Task<Client> RegisterClientAsync(CreateClientDto dto)
@@ -17,7 +17,7 @@ public sealed class ClientService(
         if (await clientRepository.ExistsByEmailAsync(dto.Email))
             throw new ClientEmailAlreadyExistsError(dto.Email);
 
-        var client = Client.Create(dto.Name, dto.Email, dto.Phone, dto.Password);
+        var client = Client.Create(dto.Name, dto.Email, dto.Phone, dto.Password, passwordHasher);
         var created = await clientRepository.AddAsync(client);
         await unitOfWork.SaveChangesAsync();
         return created;
@@ -28,7 +28,7 @@ public sealed class ClientService(
         var client = await clientRepository.GetByEmailAsync(email)
             ?? throw new InvalidCredentialsError();
 
-        if (!client.MatchesPassword(password))
+        if (!client.MatchesPassword(password, passwordHasher))
             throw new InvalidCredentialsError();
 
         return client;

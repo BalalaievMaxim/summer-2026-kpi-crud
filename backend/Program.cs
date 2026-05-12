@@ -28,9 +28,13 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IMembershipRepositoryPort, MembershipRepository>();
 builder.Services.AddScoped<IMembershipPlanRepositoryPort, MembershipPlanRepository>();
-builder.Services.AddScoped<IInvoiceRepositoryPort, InvoiceRepository>();
+builder.Services.AddScoped<InvoiceRepository>();
+builder.Services.AddScoped<IInvoiceRepositoryPort>(sp => sp.GetRequiredService<InvoiceRepository>());
+builder.Services.AddScoped<IInvoiceAnalyticsRepository>(sp => sp.GetRequiredService<InvoiceRepository>());
 builder.Services.AddScoped<IClassTypeRepositoryPort, ClassTypeRepository>();
-builder.Services.AddScoped<IClassScheduleRepository, ClassRepository>();
+builder.Services.AddScoped<ClassRepository>();
+builder.Services.AddScoped<IClassRepositoryPort>(sp => sp.GetRequiredService<ClassRepository>());
+builder.Services.AddScoped<IClassScheduleRepository>(sp => sp.GetRequiredService<ClassRepository>());
 builder.Services.AddScoped<IEnrollmentRepositoryPort, EnrollmentRepository>();
 
 builder.Services.AddScoped<ClientRepository>();
@@ -43,6 +47,7 @@ builder.Services.AddScoped<ClassFactory>();
 builder.Services.AddScoped<EnrollmentFactory>();
 builder.Services.AddScoped<InvoiceFactory>();
 
+builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<ICoachService, CoachService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();

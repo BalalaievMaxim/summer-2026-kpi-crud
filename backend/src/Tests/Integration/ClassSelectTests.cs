@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using GymManagement.Infrastructure.Persistence.Entities;
 using Xunit;
-using GymClassDetails = GymManagement.Domain.Classes.GymClassDetails;
+using GymClassDetails = GymManagement.Application.DTOs.GymClassDetails;
 
 namespace GymManagement.Tests.Integration;
 

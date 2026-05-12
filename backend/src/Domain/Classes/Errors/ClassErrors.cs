@@ -47,13 +47,19 @@ public sealed class CoachScheduleConflictError : DomainError
 public sealed class InvalidCapacityError : DomainError
 {
     public InvalidCapacityError()
-        : base("Class.InvalidCapacity", "Capacity must be greater than zero.") { }
+        : base("Class.InvalidCapacity", $"Capacity must be between 1 and {Class.MaxCapacity}.") { }
 }
 
 public sealed class EnrollmentNotFoundInClassError : DomainError
 {
     public EnrollmentNotFoundInClassError(int clientId, int classId)
         : base("Class.EnrollmentNotFound", $"Client {clientId} is not enrolled in class {classId}.") { }
+}
+
+public sealed class ClassHasEnrollmentsError : DomainError
+{
+    public ClassHasEnrollmentsError(int classId)
+        : base("Class.HasEnrollments", $"Cannot delete class {classId} because it has enrolled clients.") { }
 }
 
 public sealed class CoachNotFoundForClassError : DomainError

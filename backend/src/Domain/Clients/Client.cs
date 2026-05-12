@@ -1,4 +1,5 @@
 using GymManagement.Domain.Clients.Errors;
+using GymManagement.Domain.Ports;
 using GymManagement.Domain.Shared;
 using GymManagement.Domain.Shared.ValueObjects;
 
@@ -21,7 +22,7 @@ public sealed class Client : AggregateRoot<int>
         Password = password;
     }
 
-    public static Client Create(string name, string email, string phone, string password)
+    public static Client Create(string name, string email, string phone, string password, IPasswordHasher passwordHasher)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new InvalidClientNameError();
@@ -34,7 +35,7 @@ public sealed class Client : AggregateRoot<int>
             name: PersonName.Create(name),
             email: Email.Create(email),
             phone: PhoneNumber.Create(phone),
-            password: Password.Create(password));
+            password: Password.Create(password, passwordHasher));
     }
 
     public static Client Reconstitute(int id, string name, string email, string phone, string password)
@@ -53,16 +54,16 @@ public sealed class Client : AggregateRoot<int>
         Name = PersonName.Create(name);
     }
 
-    public bool MatchesPassword(string password) => Password.Matches(password);
+    public bool MatchesPassword(string password, IPasswordHasher passwordHasher) => Password.Matches(password, passwordHasher);
 
-    public void ChangePassword(string currentPassword, string newPassword)
+    public void ChangePassword(string currentPassword, string newPassword, IPasswordHasher passwordHasher)
     {
-        if (!MatchesPassword(currentPassword))
+        if (!MatchesPassword(currentPassword, passwordHasher))
             throw new InvalidCredentialsError();
 
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 4)
             throw new InvalidPasswordError();
 
-        Password = Password.Create(newPassword);
+        Password = Password.Create(newPassword, passwordHasher);
     }
 }

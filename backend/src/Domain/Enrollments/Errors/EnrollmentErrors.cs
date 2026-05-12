@@ -20,9 +20,9 @@ public sealed class ClientAlreadyEnrolledError : DomainError
         : base("Enrollment.AlreadyEnrolled", $"Client {clientId} is already enrolled in class {classId}.") { }
 }
 
-public sealed class EnrollmentAlreadyCancelledError : DomainError
+public sealed class ClientHasNoActiveMembershipError : DomainError
 {
-    public EnrollmentAlreadyCancelledError(int enrollmentId)
-        : base("Enrollment.AlreadyCancelled", $"Enrollment {enrollmentId} is already cancelled.") { }
+    public ClientHasNoActiveMembershipError(int clientId)
+        : base("Enrollment.NoActiveMembership", $"Client {clientId} does not have an active membership.") { }
 }
 

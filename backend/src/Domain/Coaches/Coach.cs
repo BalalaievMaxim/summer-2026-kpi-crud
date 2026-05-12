@@ -1,4 +1,5 @@
 using GymManagement.Domain.Coaches.Errors;
+using GymManagement.Domain.Ports;
 using GymManagement.Domain.Shared;
 using GymManagement.Domain.Shared.ValueObjects;
 
@@ -21,7 +22,7 @@ public sealed class Coach : AggregateRoot<int>
         Password = password;
     }
 
-    public static Coach Create(string name, string email, string specialization, string password)
+    public static Coach Create(string name, string email, string specialization, string password, IPasswordHasher passwordHasher)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new InvalidCoachNameError();
@@ -34,7 +35,7 @@ public sealed class Coach : AggregateRoot<int>
             name: PersonName.Create(name),
             email: Email.Create(email),
             specialization: SpecializationName.Create(specialization),
-            password: Password.Create(password));
+            password: Password.Create(password, passwordHasher));
     }
 
     public static Coach Reconstitute(int id, string name, string email, string specialization, string password)
@@ -53,16 +54,16 @@ public sealed class Coach : AggregateRoot<int>
     public void UpdateEmail(string email)
         => Email = Email.Create(email);
 
-    public bool MatchesPassword(string password) => Password.Matches(password);
+    public bool MatchesPassword(string password, IPasswordHasher passwordHasher) => Password.Matches(password, passwordHasher);
 
-    public void ChangePassword(string currentPassword, string newPassword)
+    public void ChangePassword(string currentPassword, string newPassword, IPasswordHasher passwordHasher)
     {
-        if (!MatchesPassword(currentPassword))
+        if (!MatchesPassword(currentPassword, passwordHasher))
             throw new InvalidCoachCredentialsError();
 
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 4)
             throw new InvalidPasswordError();
 
-        Password = Password.Create(newPassword);
+        Password = Password.Create(newPassword, passwordHasher);
     }
 }

@@ -4,9 +4,10 @@ namespace GymManagement.Domain.Ports;
 
 public interface IMembershipRepositoryPort
 {
-    Task AddAsync(MembershipRecord membership, CancellationToken cancellationToken = default);
-    Task<List<MembershipRecord>> GetActiveMembershipsByClientAsync(int clientId, CancellationToken cancellationToken = default);
-    Task MarkAsActiveMembershipAsync(int membershipId, CancellationToken cancellationToken = default);
-    Task<List<MembershipRecord>> GetAllActiveMembershipReferencedOnMembershipPlan(int planId, CancellationToken cancellationToken = default);
-    Task<MembershipRecord?> GetPendingMembershipByClientAsync(int clientId, CancellationToken cancellationToken = default);
+    Task AddAsync(Membership membership, CancellationToken cancellationToken = default);
+    Task UpdateAsync(Membership membership, CancellationToken cancellationToken = default);
+    Task<List<Membership>> GetActiveMembershipsByClientAsync(int clientId, CancellationToken cancellationToken = default);
+    Task<bool> HasActiveMembershipForPlanAsync(int clientId, int planId, DateOnly today, CancellationToken cancellationToken = default);
+    Task<bool> HasActiveMembershipsForPlanAsync(int planId, DateOnly today, CancellationToken cancellationToken = default);
+    Task<Membership?> GetPendingMembershipByClientAsync(int clientId, CancellationToken cancellationToken = default);
 }

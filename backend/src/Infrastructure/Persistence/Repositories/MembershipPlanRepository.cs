@@ -8,19 +8,19 @@ namespace GymManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class MembershipPlanRepository(GymManagementContext context) : IMembershipPlanRepositoryPort
 {
-    public async Task AddAsync(MembershipPlanSnapshot plan, CancellationToken cancellationToken = default)
+    public async Task AddAsync(MembershipPlan plan, CancellationToken cancellationToken = default)
     {
         var entity = new E.MembershipPlan
         {
             Name = plan.Name,
             DurationMonths = plan.DurationMonths,
-            Price = plan.Price
+            Price = plan.Price.Amount
         };
 
         await context.Membershipplans.AddAsync(entity, cancellationToken);
     }
 
-    public async Task<MembershipPlanSnapshot?> GetMembershipPlanByIdAsync(int planId,
+    public async Task<MembershipPlan?> GetByIdAsync(int planId,
         CancellationToken cancellationToken = default)
     {
         var entity = await context.Membershipplans
@@ -28,7 +28,7 @@ public sealed class MembershipPlanRepository(GymManagementContext context) : IMe
             .Include(p => p.PlanAccesses)
             .FirstOrDefaultAsync(p => p.PlanId == planId, cancellationToken);
 
-        return entity is null ? null : ToSnapshot(entity);
+        return entity is null ? null : ToAggregate(entity);
     }
 
     public async Task DeleteMembershipPlanAsync(int planId, CancellationToken cancellationToken = default)
@@ -38,7 +38,7 @@ public sealed class MembershipPlanRepository(GymManagementContext context) : IMe
             context.Membershipplans.Remove(entity);
     }
 
-    public async Task<List<MembershipPlanSnapshot>> GetPlansAsync(decimal? min, decimal? max,
+    public async Task<List<MembershipPlan>> GetPlansAsync(decimal? min, decimal? max,
         CancellationToken cancellationToken = default)
     {
         var query = context.Membershipplans.AsNoTracking().AsQueryable();
@@ -46,9 +46,14 @@ public sealed class MembershipPlanRepository(GymManagementContext context) : IMe
         if (max.HasValue) query = query.Where(p => p.Price <= max.Value);
 
         var list = await query.ToListAsync(cancellationToken);
-        return list.Select(ToSnapshot).ToList();
+        return list.Select(ToAggregate).ToList();
     }
 
-    private static MembershipPlanSnapshot ToSnapshot(E.MembershipPlan p) =>
-        new(p.PlanId, p.Name, p.DurationMonths, p.Price);
+    private static MembershipPlan ToAggregate(E.MembershipPlan p) =>
+        MembershipPlan.Reconstitute(
+            p.PlanId,
+            p.Name,
+            p.DurationMonths,
+            p.Price,
+            p.PlanAccesses.Select(access => access.ZoneId));
 }

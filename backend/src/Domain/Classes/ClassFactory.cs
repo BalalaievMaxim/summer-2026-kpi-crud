@@ -7,10 +7,10 @@ namespace GymManagement.Domain.Classes;
 
 public class ClassFactory
 {
-    private readonly IClassScheduleRepository _classRepo;
+    private readonly IClassRepositoryPort _classRepo;
     private readonly ICoachRepository _coachRepo;
 
-    public ClassFactory(IClassScheduleRepository classRepo, ICoachRepository coachRepo)
+    public ClassFactory(IClassRepositoryPort classRepo, ICoachRepository coachRepo)
     {
         _classRepo = classRepo;
         _coachRepo = coachRepo;
@@ -22,14 +22,15 @@ public class ClassFactory
         DateTimeOffset start,
         DateTimeOffset end,
         int capacity,
+        DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
-        if (capacity <= 0)
+        if (capacity <= 0 || capacity > Class.MaxCapacity)
             throw new InvalidCapacityError();
 
         var schedule = TimeRange.Create(start, end);
 
-        if (schedule.IsInPast())
+        if (schedule.IsInPast(now))
             throw new ClassInPastError();
 
         var coach = await _coachRepo.GetByIdAsync(coachId, cancellationToken);

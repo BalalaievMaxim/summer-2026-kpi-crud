@@ -1,4 +1,4 @@
-namespace GymManagement.Domain.Ports;
+namespace GymManagement.Application.Services.Interfaces;
 
 public interface ITokenService
 {

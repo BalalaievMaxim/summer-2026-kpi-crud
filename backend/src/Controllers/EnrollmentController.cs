@@ -32,9 +32,5 @@ public sealed class EnrollmentController(IEnrollmentService enrollmentService) :
         {
             return BadRequest(new { code = ex.Code, error = ex.Message });
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 }

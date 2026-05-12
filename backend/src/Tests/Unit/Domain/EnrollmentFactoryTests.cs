@@ -4,45 +4,37 @@ using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Enrollments;
 using GymManagement.Domain.Enrollments.Errors;
 using GymManagement.Domain.Ports;
+using GymManagement.Domain.Shared.ValueObjects;
 using Moq;
+using DomainClass = GymManagement.Domain.Classes.Class;
 
 namespace GymManagement.Tests.Unit.Domain;
 
 public sealed class EnrollmentFactoryTests
 {
-    private readonly Mock<IClassScheduleRepository> _classRepoMock = new();
-    private readonly Mock<IEnrollmentRepositoryPort> _enrollmentRepoMock = new();
+    private readonly Mock<IClassRepositoryPort> _classRepoMock = new();
     private readonly EnrollmentFactory _factory;
-
-    private static GymClassDetails Session(int classId, int capacity, params int[] enrollmentClients)
-        => new(classId, 1, "t", 1, "c", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(1).AddHours(2), capacity, enrollmentClients);
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     public EnrollmentFactoryTests()
     {
-        _factory = new EnrollmentFactory(_classRepoMock.Object, _enrollmentRepoMock.Object);
+        _factory = new EnrollmentFactory(_classRepoMock.Object);
     }
 
-    private void SetupClassExists(GymClassDetails details)
+    private static DomainClass Session(int classId, int capacity, params int[] enrollmentClients)
+    {
+        var schedule = TimeRange.Create(DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow.AddDays(1).AddHours(2));
+        var enrollments = enrollmentClients.Select((clientId, index) =>
+            Enrollment.Reconstitute(index + 1, clientId, classId, DateTimeOffset.UtcNow));
+
+        return DomainClass.Reconstitute(classId, 1, 1, schedule, capacity, enrollments);
+    }
+
+    private void SetupClassExists(DomainClass details)
     {
         _classRepoMock
-            .Setup(r => r.GetByIdWithEnrollmentsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(details);
-    }
-
-    private void SetupClientNotEnrolled()
-    {
-        _enrollmentRepoMock
-            .Setup(r => r.IsClientEnrolledAsync(
-                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-    }
-
-    private void SetupClientAlreadyEnrolled()
-    {
-        _enrollmentRepoMock
-            .Setup(r => r.IsClientEnrolledAsync(
-                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
     }
 
     [Fact]
@@ -50,9 +42,8 @@ public sealed class EnrollmentFactoryTests
     {
         var details = Session(1, capacity: 10);
         SetupClassExists(details);
-        SetupClientNotEnrolled();
 
-        var enrollment = await _factory.CreateAsync(clientId: 1, classId: 1);
+        var enrollment = await _factory.CreateAsync(clientId: 1, classId: 1, Now);
 
         enrollment.Should().NotBeNull();
         enrollment.ClientId.Should().Be(1);
@@ -62,14 +53,14 @@ public sealed class EnrollmentFactoryTests
     [Fact]
     public async Task CreateAsync_InvalidClientId_ThrowsInvalidEnrollmentError()
     {
-        var act = () => _factory.CreateAsync(clientId: 0, classId: 1);
+        var act = () => _factory.CreateAsync(clientId: 0, classId: 1, Now);
         await act.Should().ThrowAsync<InvalidEnrollmentError>();
     }
 
     [Fact]
     public async Task CreateAsync_InvalidClassId_ThrowsInvalidEnrollmentError()
     {
-        var act = () => _factory.CreateAsync(clientId: 1, classId: -1);
+        var act = () => _factory.CreateAsync(clientId: 1, classId: -1, Now);
         await act.Should().ThrowAsync<InvalidEnrollmentError>();
     }
 
@@ -77,10 +68,10 @@ public sealed class EnrollmentFactoryTests
     public async Task CreateAsync_ClassNotFound_ThrowsClassNotFoundError()
     {
         _classRepoMock
-            .Setup(r => r.GetByIdWithEnrollmentsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((GymClassDetails?)null);
+            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DomainClass?)null);
 
-        var act = () => _factory.CreateAsync(clientId: 1, classId: 999);
+        var act = () => _factory.CreateAsync(clientId: 1, classId: 999, Now);
         await act.Should().ThrowAsync<ClassNotFoundError>();
     }
 
@@ -90,18 +81,17 @@ public sealed class EnrollmentFactoryTests
         var details = Session(1, capacity: 1, enrollmentClients: 1001);
         SetupClassExists(details);
 
-        var act = () => _factory.CreateAsync(clientId: 1, classId: 1);
+        var act = () => _factory.CreateAsync(clientId: 1, classId: 1, Now);
         await act.Should().ThrowAsync<ClassFullError>();
     }
 
     [Fact]
-    public async Task CreateAsync_AlreadyEnrolled_ThrowsClientAlreadyEnrolledError()
+    public async Task CreateAsync_AlreadyEnrolled_ThrowsDuplicateEnrollmentError()
     {
-        var details = Session(1, capacity: 10);
+        var details = Session(1, capacity: 10, enrollmentClients: 1);
         SetupClassExists(details);
-        SetupClientAlreadyEnrolled();
 
-        var act = () => _factory.CreateAsync(clientId: 1, classId: 1);
-        await act.Should().ThrowAsync<ClientAlreadyEnrolledError>();
+        var act = () => _factory.CreateAsync(clientId: 1, classId: 1, Now);
+        await act.Should().ThrowAsync<DuplicateEnrollmentError>();
     }
 }

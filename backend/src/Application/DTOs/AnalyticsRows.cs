@@ -1,4 +1,11 @@
-namespace GymManagement.Domain.Queries;
+namespace GymManagement.Application.DTOs;
+
+public sealed record ClientActivityRow(
+    int ClientId,
+    string Name,
+    string Email,
+    int TotalEnrollments,
+    int ClientRank);
 
 public sealed record ClassAttendanceRow(
     int ClassId,

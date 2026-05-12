@@ -1,6 +1,5 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
-using GymManagement.Domain.Queries;
 using GymManagement.Domain.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,9 +19,6 @@ public sealed class ClassController(IClassService classService) : ControllerBase
             if (request.EndTime <= request.StartTime)
                 return BadRequest("End time must be after start time");
 
-            if (request.Capacity <= 0 || request.Capacity > 10)
-                return BadRequest("Capacity must be between 1 and 10");
-
             var created = await classService.CreateClassAsync(
                 request.ClassTypeId,
                 request.CoachId,
@@ -39,10 +35,6 @@ public sealed class ClassController(IClassService classService) : ControllerBase
         catch (DomainError ex)
         {
             return BadRequest(new { code = ex.Code, error = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -66,9 +58,9 @@ public sealed class ClassController(IClassService classService) : ControllerBase
 
             return Ok(updated);
         }
-        catch (InvalidOperationException ex)
+        catch (DomainError ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { code = ex.Code, error = ex.Message });
         }
     }
 

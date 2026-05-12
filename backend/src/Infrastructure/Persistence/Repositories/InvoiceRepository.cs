@@ -1,13 +1,14 @@
+using GymManagement.Application.DTOs;
+using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Billing;
 using GymManagement.Domain.Ports;
-using GymManagement.Domain.Queries;
 using GymManagement.Infrastructure.Persistence;
 using E = GymManagement.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public sealed class InvoiceRepository(GymManagementContext context) : IInvoiceRepositoryPort
+public sealed class InvoiceRepository(GymManagementContext context) : IInvoiceRepositoryPort, IInvoiceAnalyticsRepository
 {
     public async Task<List<InvoiceRecord>> GetAllClientInvoicesAsync(int clientId,
         CancellationToken cancellationToken = default)
@@ -126,7 +127,7 @@ public sealed class InvoiceRepository(GymManagementContext context) : IInvoiceRe
     {
         PaymentMethod.Cash => "cash",
         PaymentMethod.Card => "card",
-        PaymentMethod.BankTransfer => "banktransfer",
+        PaymentMethod.BankTransfer => "bank_transfer",
         PaymentMethod.Online => "online",
         _ => "cash"
     };
@@ -134,7 +135,7 @@ public sealed class InvoiceRepository(GymManagementContext context) : IInvoiceRe
     private static PaymentMethod ParseMethod(string? raw) => raw?.ToLowerInvariant() switch
     {
         "card" => PaymentMethod.Card,
-        "banktransfer" => PaymentMethod.BankTransfer,
+        "bank_transfer" => PaymentMethod.BankTransfer,
         "online" => PaymentMethod.Online,
         _ => PaymentMethod.Cash
     };

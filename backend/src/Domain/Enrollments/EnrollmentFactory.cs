@@ -6,18 +6,17 @@ namespace GymManagement.Domain.Enrollments;
 
 public class EnrollmentFactory
 {
-    private readonly IClassScheduleRepository _classRepo;
-    private readonly IEnrollmentRepositoryPort _enrollmentRepo;
+    private readonly IClassRepositoryPort _classRepo;
 
-    public EnrollmentFactory(IClassScheduleRepository classRepo, IEnrollmentRepositoryPort enrollmentRepo)
+    public EnrollmentFactory(IClassRepositoryPort classRepo)
     {
         _classRepo = classRepo;
-        _enrollmentRepo = enrollmentRepo;
     }
 
     public async Task<Enrollment> CreateAsync(
         int clientId,
         int classId,
+        DateTimeOffset now,
         CancellationToken cancellationToken = default)
     {
         if (clientId <= 0)
@@ -25,17 +24,10 @@ public class EnrollmentFactory
         if (classId <= 0)
             throw new InvalidEnrollmentError("ClassId must be a positive number.");
 
-        var classEntity = await _classRepo.GetByIdWithEnrollmentsAsync(classId, cancellationToken);
+        var classEntity = await _classRepo.GetByIdAsync(classId, cancellationToken);
         if (classEntity is null)
             throw new ClassNotFoundError(classId);
 
-        if (classEntity.EnrollmentClientIds.Count >= classEntity.Capacity)
-            throw new ClassFullError(classId);
-
-        var alreadyEnrolled = await _enrollmentRepo.IsClientEnrolledAsync(clientId, classId, cancellationToken);
-        if (alreadyEnrolled)
-            throw new ClientAlreadyEnrolledError(clientId, classId);
-
-        return Enrollment.Create(clientId, classId);
+        return classEntity.Enroll(clientId, now);
     }
 }

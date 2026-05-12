@@ -19,6 +19,7 @@ public class InvoiceFactory
         int clientId,
         int membershipPlanId,
         PaymentMethod method,
+        DateOnly invoiceDate,
         string? notes,
         CancellationToken cancellationToken = default)
     {
@@ -28,13 +29,13 @@ public class InvoiceFactory
         if (membershipPlanId <= 0)
             throw new InvalidInvoiceError("MembershipPlanId must be a positive number.");
 
-        var plan = await _planRepo.GetMembershipPlanByIdAsync(membershipPlanId, cancellationToken)
+        var plan = await _planRepo.GetByIdAsync(membershipPlanId, cancellationToken)
             ?? throw new MembershipPlanNotFoundForInvoiceError(membershipPlanId);
 
         var clientExists = await _clientRepo.ExistsAsync(clientId, cancellationToken);
         if (!clientExists)
             throw new ClientNotFoundForInvoiceError(clientId);
 
-        return Invoice.Create(clientId, plan.Price, method, notes);
+        return Invoice.Create(clientId, plan.Price.Amount, method, invoiceDate, notes);
     }
 }

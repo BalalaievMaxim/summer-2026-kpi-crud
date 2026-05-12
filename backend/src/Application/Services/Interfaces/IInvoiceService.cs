@@ -1,5 +1,5 @@
 using GymManagement.Domain.Billing;
-using GymManagement.Domain.Queries;
+using GymManagement.Application.DTOs;
 
 namespace GymManagement.Application.Services.Interfaces;
 

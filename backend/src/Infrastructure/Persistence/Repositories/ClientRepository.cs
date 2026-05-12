@@ -1,6 +1,7 @@
+using GymManagement.Application.DTOs;
+using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Ports;
-using GymManagement.Domain.Queries;
 using GymManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Runtime.CompilerServices;

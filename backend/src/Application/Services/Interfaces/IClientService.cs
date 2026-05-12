@@ -1,6 +1,5 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Domain.Clients;
-using GymManagement.Domain.Queries;
 
 namespace GymManagement.Application.Services.Interfaces;
 

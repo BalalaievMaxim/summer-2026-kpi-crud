@@ -1,18 +1,31 @@
 using System.Runtime.CompilerServices;
+using GymManagement.Application.DTOs;
+using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Classes;
+using GymManagement.Domain.Enrollments;
 using GymManagement.Domain.Ports;
-using GymManagement.Domain.Queries;
 using GymManagement.Domain.Shared.ValueObjects;
 using GymManagement.Infrastructure.Persistence;
-using GymManagement.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using DomainClass = GymManagement.Domain.Classes.Class;
+using DomainEnrollment = GymManagement.Domain.Enrollments.Enrollment;
 using E = GymManagement.Infrastructure.Persistence.Entities;
 
 namespace GymManagement.Infrastructure.Persistence.Repositories;
 
-public sealed class ClassRepository(GymManagementContext context) : IClassScheduleRepository
+public sealed class ClassRepository(GymManagementContext context) : IClassRepositoryPort, IClassScheduleRepository
 {
-    public async Task<GymClassDetails?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<DomainClass?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var entity = await context.Classes
+            .AsNoTracking()
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.ClassId == id, cancellationToken);
+
+        return entity is null ? null : MapAggregate(entity);
+    }
+
+    public async Task<GymClassDetails?> GetClassByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var entity = await context.Classes
             .AsNoTracking()
@@ -22,9 +35,6 @@ public sealed class ClassRepository(GymManagementContext context) : IClassSchedu
             .FirstOrDefaultAsync(c => c.ClassId == id, cancellationToken);
         return entity is null ? null : Map(entity);
     }
-
-    public async Task<GymClassDetails?> GetByIdWithEnrollmentsAsync(int id, CancellationToken cancellationToken = default)
-        => await GetByIdAsync(id, cancellationToken);
 
     public async Task<IReadOnlyList<GymClassDetails>> GetScheduleForDateAsync(DateTime date, CancellationToken cancellationToken = default)
     {
@@ -57,46 +67,41 @@ public sealed class ClassRepository(GymManagementContext context) : IClassSchedu
         return list.Select(Map).ToList();
     }
 
-    public async Task<GymClassDetails> CreateAsync(int classTypeId, int coachId, DateTime startUtc, DateTime endUtc, int capacity, CancellationToken cancellationToken = default)
+    public async Task<int> AddAsync(DomainClass classEntity, CancellationToken cancellationToken = default)
     {
         var entity = new E.Class
         {
-            ClassTypeId = classTypeId,
-            CoachId = coachId,
-            StartTime = startUtc,
-            EndTime = endUtc,
-            Capacity = capacity
+            ClassTypeId = classEntity.ClassTypeId,
+            CoachId = classEntity.CoachId,
+            StartTime = classEntity.Schedule.Start.UtcDateTime,
+            EndTime = classEntity.Schedule.End.UtcDateTime,
+            Capacity = classEntity.Capacity
         };
 
         context.Classes.Add(entity);
         await context.SaveChangesAsync(cancellationToken);
 
-        var loaded = await context.Classes
-            .Include(c => c.ClassType)
-            .Include(c => c.Coach)
-            .Include(c => c.Enrollments)
-            .FirstAsync(c => c.ClassId == entity.ClassId, cancellationToken);
-
-        return Map(loaded);
+        return entity.ClassId;
     }
 
-    public async Task<GymClassDetails?> UpdateTimesAsync(int classId, DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(DomainClass classEntity, CancellationToken cancellationToken = default)
     {
         var existing = await context.Classes
             .Include(c => c.ClassType)
             .Include(c => c.Coach)
             .Include(c => c.Enrollments)
-            .FirstOrDefaultAsync(c => c.ClassId == classId, cancellationToken);
+            .FirstOrDefaultAsync(c => c.ClassId == classEntity.Id, cancellationToken);
 
         if (existing is null)
-            return null;
+            return;
 
-        existing.StartTime = startUtc;
-        existing.EndTime = endUtc;
+        existing.ClassTypeId = classEntity.ClassTypeId;
+        existing.CoachId = classEntity.CoachId;
+        existing.StartTime = classEntity.Schedule.Start.UtcDateTime;
+        existing.EndTime = classEntity.Schedule.End.UtcDateTime;
+        existing.Capacity = classEntity.Capacity;
 
-        await context.SaveChangesAsync(cancellationToken);
-
-        return Map(existing);
+        SyncEnrollments(existing, classEntity.Enrollments);
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -109,7 +114,7 @@ public sealed class ClassRepository(GymManagementContext context) : IClassSchedu
         return true;
     }
 
-    public async Task<bool> HasTimeConflictForCoachAsync(int coachId, DateTime startTime, DateTime endTime, int? excludeClassId = null, CancellationToken cancellationToken = default)
+    private async Task<bool> HasTimeConflictForCoachAsync(int coachId, DateTime startTime, DateTime endTime, int? excludeClassId = null, CancellationToken cancellationToken = default)
     {
         var query = context.Classes
             .Where(c => c.CoachId == coachId);
@@ -194,4 +199,39 @@ public sealed class ClassRepository(GymManagementContext context) : IClassSchedu
             c.EndTime,
             c.Capacity,
             c.Enrollments.Select(e => e.ClientId).ToList());
+
+    private static DomainClass MapAggregate(E.Class c)
+    {
+        var schedule = TimeRange.Create(
+            new DateTimeOffset(DateTime.SpecifyKind(c.StartTime, DateTimeKind.Utc)),
+            new DateTimeOffset(DateTime.SpecifyKind(c.EndTime, DateTimeKind.Utc)));
+
+        var enrollments = c.Enrollments.Select(e =>
+            DomainEnrollment.Reconstitute(
+                e.EnrollmentId,
+                e.ClientId,
+                e.ClassId,
+                new DateTimeOffset(DateTime.SpecifyKind(e.RegistrationTime, DateTimeKind.Utc))));
+
+        return DomainClass.Reconstitute(c.ClassId, c.ClassTypeId, c.CoachId, schedule, c.Capacity, enrollments);
+    }
+
+    private static void SyncEnrollments(E.Class existing, IReadOnlyList<DomainEnrollment> enrollments)
+    {
+        var desiredClientIds = enrollments.Select(e => e.ClientId).ToHashSet();
+
+        foreach (var removed in existing.Enrollments.Where(e => !desiredClientIds.Contains(e.ClientId)).ToList())
+            existing.Enrollments.Remove(removed);
+
+        foreach (var enrollment in enrollments.Where(e => existing.Enrollments.All(existingEnrollment =>
+                     existingEnrollment.ClientId != e.ClientId)))
+        {
+            existing.Enrollments.Add(new E.Enrollment
+            {
+                ClientId = enrollment.ClientId,
+                ClassId = existing.ClassId,
+                RegistrationTime = enrollment.RegistrationTime.UtcDateTime
+            });
+        }
+    }
 }

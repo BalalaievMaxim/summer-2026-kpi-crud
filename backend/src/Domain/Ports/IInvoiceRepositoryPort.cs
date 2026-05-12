@@ -1,5 +1,4 @@
 using GymManagement.Domain.Billing;
-using GymManagement.Domain.Queries;
 
 namespace GymManagement.Domain.Ports;
 
@@ -12,6 +11,4 @@ public interface IInvoiceRepositoryPort
 
     Task<int> AddAsync(Invoice invoice, CancellationToken cancellationToken = default);
     Task UpdateAsync(Invoice invoice, CancellationToken cancellationToken = default);
-
-    Task<List<TotalMembershipRevenueRow>> GetMonthlyRevenueByPlanAsync(CancellationToken cancellationToken = default);
 }

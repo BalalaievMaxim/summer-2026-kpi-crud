@@ -1,3 +1,5 @@
+using GymManagement.Domain.Ports;
+
 namespace GymManagement.Domain.Shared.ValueObjects;
 
 public sealed class Password : ValueObject
@@ -6,26 +8,22 @@ public sealed class Password : ValueObject
 
     private Password(string value) => Value = value;
 
-    public static Password Create(string raw)
+    public static Password Create(string raw, IPasswordHasher hasher)
     {
         if (string.IsNullOrWhiteSpace(raw) || raw.Length < 4)
             throw new DomainValidationError("Shared.InvalidPassword", "Password must be at least 4 characters.");
 
-        return new Password(BCrypt.Net.BCrypt.HashPassword(raw));
+        return new Password(hasher.Hash(raw));
     }
 
     public static Password Reconstitute(string stored) => new(stored);
 
-    public bool Matches(string raw)
+    public bool Matches(string raw, IPasswordHasher hasher)
     {
         if (string.IsNullOrWhiteSpace(raw))
             return false;
 
-        if (Value == raw)
-            return true;
-
-        return Value.StartsWith("$2", StringComparison.Ordinal) &&
-               BCrypt.Net.BCrypt.Verify(raw, Value);
+        return hasher.Verify(raw, Value);
     }
 
     protected override IEnumerable<object?> GetAtomicValues()
