@@ -10,10 +10,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.3.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
   </ItemGroup>
 
-  <!-- Exclude test projects and the new sub-layer projects from Presentation compilation -->
   <ItemGroup>
     <Compile Remove="src\Tests\**" />
     <Content Remove="src\Tests\**" />

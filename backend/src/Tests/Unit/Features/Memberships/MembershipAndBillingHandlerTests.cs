@@ -1,5 +1,7 @@
 using FluentAssertions;
+using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Features.Enrollments.Commands.CreateEnrollment;
+using GymManagement.Application.Features.Enrollments.Events;
 using GymManagement.Application.Features.Invoices.Commands.CreateInvoice;
 using GymManagement.Application.Features.Invoices.Commands.MarkInvoicePaid;
 using GymManagement.Application.Features.MembershipPlans.Commands.CreateMembershipPlan;
@@ -29,6 +31,7 @@ public sealed class MembershipAndBillingHandlerTests
     private readonly Mock<IEnrollmentRepositoryPort> _enrollmentRepoMock = new();
     private readonly Mock<IClassRepositoryPort> _classRepoMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    private readonly Mock<IEventBus> _eventBusMock = new();
 
     private readonly InvoiceFactory _invoiceFactory;
     private readonly EnrollmentFactory _enrollmentFactory;
@@ -249,16 +252,19 @@ public sealed class MembershipAndBillingHandlerTests
         _unitOfWorkMock.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-   [Fact]
-    public async Task CreateEnrollment_ValidData_Should_CreateAndReturnResult()
+    [Fact]
+    public async Task CreateEnrollment_ValidData_Should_CreateAndReturnResult_And_PublishEnrichedEvent()
     {
         var handler = new CreateEnrollmentCommandHandler(
             _enrollmentRepoMock.Object,
             _clientRepoMock.Object,
             _membershipRepoMock.Object,
-            _enrollmentFactory);
+            _enrollmentFactory,
+            _eventBusMock.Object);
 
-        _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var client = Client.Reconstitute(1, "John Doe", "john@test.com", "+380671234567", "pass");
+
+        _clientRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(client);
         SetupActiveMembership(1);
         _classRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Session(1, 10));
         _enrollmentRepoMock.Setup(r => r.AddAsync(It.IsAny<Enrollment>(), It.IsAny<CancellationToken>())).ReturnsAsync(42);
@@ -270,6 +276,13 @@ public sealed class MembershipAndBillingHandlerTests
         _enrollmentRepoMock.Verify(r => r.AddAsync(It.Is<Enrollment>(enrollment =>
             enrollment.ClientId == 1 &&
             enrollment.ClassId == 1), It.IsAny<CancellationToken>()), Times.Once);
+
+        _eventBusMock.Verify(b => b.PublishAsync(It.Is<EnrollmentCreatedEvent>(e => 
+            e.ClientId == 1 && 
+            e.ClientEmail == "john@test.com" && 
+            e.ClientName == "John Doe" && 
+            e.ClassId == 1), 
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -279,9 +292,12 @@ public sealed class MembershipAndBillingHandlerTests
             _enrollmentRepoMock.Object,
             _clientRepoMock.Object,
             _membershipRepoMock.Object,
-            _enrollmentFactory);
+            _enrollmentFactory,
+            _eventBusMock.Object);
 
-        _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var client = Client.Reconstitute(1, "John Doe", "john@test.com", "+380671234567", "pass");
+
+        _clientRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(client);
         SetupActiveMembership(1);
         _classRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Session(1, 1, 2));
 
@@ -289,6 +305,7 @@ public sealed class MembershipAndBillingHandlerTests
 
         await act.Should().ThrowAsync<ClassFullError>();
         _enrollmentRepoMock.Verify(r => r.AddAsync(It.IsAny<Enrollment>(), It.IsAny<CancellationToken>()), Times.Never);
+        _eventBusMock.Verify(b => b.PublishAsync(It.IsAny<IEvent>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -298,14 +315,18 @@ public sealed class MembershipAndBillingHandlerTests
             _enrollmentRepoMock.Object,
             _clientRepoMock.Object,
             _membershipRepoMock.Object,
-            _enrollmentFactory);
+            _enrollmentFactory,
+            _eventBusMock.Object);
 
-        _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var client = Client.Reconstitute(1, "John Doe", "john@test.com", "+380671234567", "pass");
+
+        _clientRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(client);
         _membershipRepoMock.Setup(r => r.GetActiveMembershipsByClientAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Membership>());
 
         var act = async () => await handler.Handle(new CreateEnrollmentCommand(1, 1));
 
         await act.Should().ThrowAsync<ClientHasNoActiveMembershipError>();
+        _eventBusMock.Verify(b => b.PublishAsync(It.IsAny<IEvent>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
