@@ -1,4 +1,4 @@
-using GymManagement.Domain.Classes;
+using GymManagement.Application.DTOs;
 using GymManagement.Domain.Ports;
 using GymManagement.Infrastructure.Persistence;
 using E = GymManagement.Infrastructure.Persistence.Entities;
@@ -8,7 +8,7 @@ namespace GymManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class ClassTypeRepository(GymManagementContext context) : IClassTypeRepositoryPort
 {
-    public async Task<ClassTypeSnapshot?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<ClassTypeDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var entity = await context.Classtypes
             .AsNoTracking()
@@ -17,7 +17,7 @@ public sealed class ClassTypeRepository(GymManagementContext context) : IClassTy
         return entity is null ? null : Map(entity);
     }
 
-    public async Task<IReadOnlyList<ClassTypeSnapshot>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ClassTypeDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var list = await context.Classtypes
             .AsNoTracking()
@@ -27,7 +27,7 @@ public sealed class ClassTypeRepository(GymManagementContext context) : IClassTy
         return list.Select(Map).ToList();
     }
 
-    public async Task<ClassTypeSnapshot> CreateAsync(string name, string? description,
+    public async Task<ClassTypeDto> CreateAsync(string name, string? description,
         CancellationToken cancellationToken = default)
     {
         var entity = new E.ClassType
@@ -42,7 +42,7 @@ public sealed class ClassTypeRepository(GymManagementContext context) : IClassTy
         return Map(entity);
     }
 
-    public async Task<ClassTypeSnapshot?> UpdateAsync(int id, string name, string? description,
+    public async Task<ClassTypeDto?> UpdateAsync(int id, string name, string? description,
         CancellationToken cancellationToken = default)
     {
         var existing = await context.Classtypes.FindAsync([id], cancellationToken);
@@ -71,7 +71,7 @@ public sealed class ClassTypeRepository(GymManagementContext context) : IClassTy
     public Task<bool> ExistsAsync(int id, CancellationToken cancellationToken = default)
         => context.Classtypes.AnyAsync(ct => ct.ClassTypeId == id, cancellationToken);
 
-    public async Task<ClassTypeSnapshot?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<ClassTypeDto?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         var entity = await context.Classtypes
             .AsNoTracking()
@@ -80,6 +80,6 @@ public sealed class ClassTypeRepository(GymManagementContext context) : IClassTy
         return entity is null ? null : Map(entity);
     }
 
-    private static ClassTypeSnapshot Map(E.ClassType ct) =>
+    private static ClassTypeDto Map(E.ClassType ct) =>
         new(ct.ClassTypeId, ct.Name, ct.Description);
 }

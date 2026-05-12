@@ -1,13 +1,16 @@
 using GymManagement.Application.Services.Interfaces;
+using GymManagement.Application.DTOs;
 using GymManagement.Domain.Classes;
+using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Coaches;
 using GymManagement.Domain.Ports;
-using GymManagement.Domain.Queries;
+using GymManagement.Domain.Shared.ValueObjects;
 
 namespace GymManagement.Application.Services;
 
 public sealed class ClassService(
-    IClassScheduleRepository classRepository,
+    IClassRepositoryPort classRepository,
+    IClassScheduleRepository classScheduleRepository,
     ICoachRepository coachRepository,
     IClassTypeRepositoryPort classTypeRepository,
     ClassFactory classFactory,
@@ -23,14 +26,17 @@ public sealed class ClassService(
         if (!await classTypeRepository.ExistsAsync(classTypeId))
             throw new Application.Exceptions.NotFoundException($"ClassType with ID {classTypeId} not found.");
 
-        await classFactory.CreateAsync(
+        var classEntity = await classFactory.CreateAsync(
             classTypeId,
             coachId,
             new DateTimeOffset(DateTime.SpecifyKind(startTime, DateTimeKind.Utc)),
             new DateTimeOffset(DateTime.SpecifyKind(endTime, DateTimeKind.Utc)),
-            capacity);
+            capacity,
+            DateTimeOffset.UtcNow);
 
-        return await classRepository.CreateAsync(classTypeId, coachId, startTime, endTime, capacity);
+        var classId = await classRepository.AddAsync(classEntity);
+        return await classScheduleRepository.GetClassByIdAsync(classId)
+            ?? throw new Application.Exceptions.NotFoundException($"Class with ID {classId} not found.");
     }
 
     public async Task<GymClassDetails?> UpdateClassAsync(int classId, DateTime newStartTime, DateTime newEndTime)
@@ -39,26 +45,23 @@ public sealed class ClassService(
         if (classEntity is null)
             return null;
 
-        if (classEntity.StartTimeUtc < DateTime.UtcNow)
-            throw new InvalidOperationException("Cannot update a class that has already started.");
+        if (classEntity.Schedule.Start < DateTimeOffset.UtcNow)
+            throw new ClassInPastError();
 
-        if (newStartTime >= newEndTime)
-            throw new InvalidOperationException("Start time must be before end time.");
+        var newRange = TimeRange.Create(
+            new DateTimeOffset(DateTime.SpecifyKind(newStartTime, DateTimeKind.Utc)),
+            new DateTimeOffset(DateTime.SpecifyKind(newEndTime, DateTimeKind.Utc)));
 
-        if (newStartTime < DateTime.UtcNow)
-            throw new InvalidOperationException("Cannot schedule a class in the past.");
-
-        var hasConflict = await classRepository.HasTimeConflictForCoachAsync(
+        var hasConflict = await classRepository.HasOverlappingClassAsync(
             classEntity.CoachId,
-            newStartTime,
-            newEndTime,
+            newRange,
             classId);
 
-        if (hasConflict)
-            throw new InvalidOperationException(
-                "Coach already has a class scheduled during this time.");
+        classEntity.Reschedule(newRange, hasConflict, DateTimeOffset.UtcNow);
 
-        return await classRepository.UpdateTimesAsync(classId, newStartTime, newEndTime);
+        await classRepository.UpdateAsync(classEntity);
+        await unitOfWork.SaveChangesAsync();
+        return await classScheduleRepository.GetClassByIdAsync(classId);
     }
 
     public async Task<bool> DeleteClassAsync(int classId)
@@ -67,8 +70,7 @@ public sealed class ClassService(
         if (classEntity is null)
             return false;
 
-        if (classEntity.EnrollmentClientIds.Count > 0)
-            throw new InvalidOperationException("Cannot delete a class with enrolled clients.");
+        classEntity.EnsureCanBeDeleted();
 
         await classRepository.DeleteAsync(classId);
         await unitOfWork.SaveChangesAsync();
@@ -77,22 +79,22 @@ public sealed class ClassService(
     }
 
     public Task<GymClassDetails?> GetClassByIdAsync(int id)
-        => classRepository.GetByIdAsync(id);
+        => classScheduleRepository.GetClassByIdAsync(id);
 
     public Task<IReadOnlyList<GymClassDetails>> GetScheduleForDateAsync(DateTime date)
-        => classRepository.GetScheduleForDateAsync(date);
+        => classScheduleRepository.GetScheduleForDateAsync(date);
 
     public async Task<IReadOnlyList<GymClassDetails>> GetScheduleForWeekAsync(DateTime startOfWeek)
     {
         var endOfWeek = startOfWeek.AddDays(7);
-        return await classRepository.GetScheduleForDateRangeAsync(startOfWeek, endOfWeek);
+        return await classScheduleRepository.GetScheduleForDateRangeAsync(startOfWeek, endOfWeek);
     }
 
     public async Task<IReadOnlyList<ClassAttendanceRow>> GetClassAttendanceAnalyticsAsync(
         DateTime startDate,
         DateTime endDate)
     {
-        var classes = await classRepository.GetScheduleForDateRangeAsync(startDate, endDate);
+        var classes = await classScheduleRepository.GetScheduleForDateRangeAsync(startDate, endDate);
 
         return classes
             .Select(c => new ClassAttendanceRow(
@@ -118,7 +120,7 @@ public sealed class ClassService(
         if (coach is null)
             throw new Application.Exceptions.NotFoundException($"Coach with ID {coachId} not found.");
 
-        var classes = await classRepository.GetClassesByCoachAsync(coachId, startDate, endDate);
+        var classes = await classScheduleRepository.GetClassesByCoachAsync(coachId, startDate, endDate);
         var list = classes.ToList();
 
         var totalHours = list.Sum(c => (c.EndTimeUtc - c.StartTimeUtc).TotalHours);
@@ -135,5 +137,5 @@ public sealed class ClassService(
     }
 
     public Task<List<CoachEfficiencyRow>> GetCoachEfficiencyAnalyticsAsync(DateTime startDate, DateTime endDate)
-        => classRepository.GetCoachEfficiencyAnalyticsAsync(startDate, endDate);
+        => classScheduleRepository.GetCoachEfficiencyAnalyticsAsync(startDate, endDate);
 }

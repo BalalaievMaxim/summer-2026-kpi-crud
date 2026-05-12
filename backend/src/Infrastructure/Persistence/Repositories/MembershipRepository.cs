@@ -8,59 +8,83 @@ namespace GymManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class MembershipRepository(GymManagementContext context) : IMembershipRepositoryPort
 {
-    public async Task AddAsync(MembershipRecord membership, CancellationToken cancellationToken = default)
+    public async Task AddAsync(Membership membership, CancellationToken cancellationToken = default)
     {
         var entity = new E.Membership
         {
             ClientId = membership.ClientId,
             PlanId = membership.PlanId,
-            StartDate = membership.StartDate,
-            EndDate = membership.EndDate,
+            StartDate = membership.Period.Start,
+            EndDate = membership.Period.End,
             IsActive = membership.IsActive
         };
 
         await context.Memberships.AddAsync(entity, cancellationToken);
     }
 
-    public async Task<List<MembershipRecord>> GetActiveMembershipsByClientAsync(int clientId,
+    public async Task UpdateAsync(Membership membership, CancellationToken cancellationToken = default)
+    {
+        var entity = await context.Memberships
+            .FirstOrDefaultAsync(m => m.MembershipId == membership.Id, cancellationToken);
+
+        if (entity is null)
+            return;
+
+        entity.ClientId = membership.ClientId;
+        entity.PlanId = membership.PlanId;
+        entity.StartDate = membership.Period.Start;
+        entity.EndDate = membership.Period.End;
+        entity.IsActive = membership.IsActive;
+    }
+
+    public async Task<List<Membership>> GetActiveMembershipsByClientAsync(int clientId,
         CancellationToken cancellationToken = default)
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var list = await context.Memberships
-            .Where(m => m.ClientId == clientId && m.IsActive && m.EndDate > today)
+            .AsNoTracking()
+            .Where(m => m.ClientId == clientId && m.IsActive && m.EndDate >= today)
             .ToListAsync(cancellationToken);
 
-        return list.Select(ToRecord).ToList();
+        return list.Select(ToAggregate).ToList();
     }
 
-    public async Task MarkAsActiveMembershipAsync(int membershipId, CancellationToken cancellationToken = default)
-    {
-        await context.Memberships
-            .Where(m => m.MembershipId == membershipId)
-            .ExecuteUpdateAsync(s => s.SetProperty(m => m.IsActive, true), cancellationToken);
-    }
-
-    public async Task<List<MembershipRecord>> GetAllActiveMembershipReferencedOnMembershipPlan(int planId,
+    public Task<bool> HasActiveMembershipForPlanAsync(
+        int clientId,
+        int planId,
+        DateOnly today,
         CancellationToken cancellationToken = default)
-    {
-        var list = await context.Memberships
-            .Where(m => m.PlanId == planId && m.IsActive)
-            .ToListAsync(cancellationToken);
+        => context.Memberships.AnyAsync(
+            m => m.ClientId == clientId &&
+                 m.PlanId == planId &&
+                 m.IsActive &&
+                 m.StartDate <= today &&
+                 m.EndDate >= today,
+            cancellationToken);
 
-        return list.Select(ToRecord).ToList();
-    }
+    public Task<bool> HasActiveMembershipsForPlanAsync(
+        int planId,
+        DateOnly today,
+        CancellationToken cancellationToken = default)
+        => context.Memberships.AnyAsync(
+            m => m.PlanId == planId &&
+                 m.IsActive &&
+                 m.StartDate <= today &&
+                 m.EndDate >= today,
+            cancellationToken);
 
-    public async Task<MembershipRecord?> GetPendingMembershipByClientAsync(int clientId,
+    public async Task<Membership?> GetPendingMembershipByClientAsync(int clientId,
         CancellationToken cancellationToken = default)
     {
         var entity = await context.Memberships
+            .AsNoTracking()
             .Where(m => m.ClientId == clientId && m.IsActive == false)
             .OrderByDescending(m => m.StartDate)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return entity is null ? null : ToRecord(entity);
+        return entity is null ? null : ToAggregate(entity);
     }
 
-    private static MembershipRecord ToRecord(E.Membership m) =>
-        new(m.MembershipId, m.ClientId, m.PlanId, m.StartDate, m.EndDate, m.IsActive);
+    private static Membership ToAggregate(E.Membership m) =>
+        Membership.Reconstitute(m.MembershipId, m.ClientId, m.PlanId, m.StartDate, m.EndDate, m.IsActive);
 }

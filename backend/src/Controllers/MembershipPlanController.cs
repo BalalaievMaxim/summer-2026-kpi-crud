@@ -1,6 +1,6 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
-using GymManagement.Domain.Memberships;
+using GymManagement.Domain.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,9 +19,9 @@ public sealed class MembershipPlanController(IMembershipPlanService membershipPl
             await membershipPlanService.CreatePlanAsync(dto);
             return StatusCode(201, "Membership plan created successfully.");
         }
-        catch (ArgumentException ex)
+        catch (DomainError ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new { code = ex.Code, error = ex.Message });
         }
         catch (Exception)
         {
@@ -37,13 +37,11 @@ public sealed class MembershipPlanController(IMembershipPlanService membershipPl
             await membershipPlanService.DeleteUnusedPlanAsync(id);
             return NoContent();
         }
-        catch (InvalidOperationException ex)
+        catch (DomainError ex)
         {
-            return Conflict(ex.Message);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
+            return ex.Code.EndsWith(".NotFound", StringComparison.Ordinal)
+                ? NotFound(new { code = ex.Code, error = ex.Message })
+                : Conflict(new { code = ex.Code, error = ex.Message });
         }
         catch (Exception)
         {
@@ -52,7 +50,7 @@ public sealed class MembershipPlanController(IMembershipPlanService membershipPl
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<MembershipPlanSnapshot>>> GetPlans([FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
+    public async Task<ActionResult<List<MembershipPlanDto>>> GetPlans([FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
     {
         try
         {
@@ -66,7 +64,7 @@ public sealed class MembershipPlanController(IMembershipPlanService membershipPl
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<MembershipPlanSnapshot>> GetPlan(int id)
+    public async Task<ActionResult<MembershipPlanDto>> GetPlan(int id)
     {
         try
         {
@@ -76,10 +74,6 @@ public sealed class MembershipPlanController(IMembershipPlanService membershipPl
                 return NotFound($"Plan with ID {id} not found.");
 
             return Ok(plan);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
         }
         catch (Exception)
         {

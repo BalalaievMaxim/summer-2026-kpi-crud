@@ -1,6 +1,6 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
-using GymManagement.Domain.Memberships;
+using GymManagement.Domain.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,13 +26,11 @@ public sealed class MembershipController(IMembershipService membershipService) :
 
             return CreatedAtAction(nameof(GetActiveByClient), new { clientId = dto.ClientId }, result);
         }
-        catch (KeyNotFoundException ex)
+        catch (DomainError ex)
         {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { error = ex.Message });
+            return ex.Code.EndsWith(".NotFound", StringComparison.Ordinal)
+                ? NotFound(new { code = ex.Code, error = ex.Message })
+                : Conflict(new { code = ex.Code, error = ex.Message });
         }
         catch (Exception)
         {

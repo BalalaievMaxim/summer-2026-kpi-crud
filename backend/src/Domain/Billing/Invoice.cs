@@ -31,7 +31,7 @@ public sealed class Invoice : AggregateRoot<int>
         Notes = notes;
     }
 
-    public static Invoice Create(int clientId, decimal amount, PaymentMethod method, string? notes = null)
+    public static Invoice Create(int clientId, decimal amount, PaymentMethod method, DateOnly date, string? notes = null)
     {
         if (clientId <= 0)
             throw new InvalidInvoiceError("ClientId must be a positive number.");
@@ -42,7 +42,7 @@ public sealed class Invoice : AggregateRoot<int>
             id: 0,
             clientId: clientId,
             amount: amount,
-            date: DateOnly.FromDateTime(DateTime.UtcNow),
+            date: date,
             status: PaymentStatus.Pending,
             method: method,
             notes: notes);

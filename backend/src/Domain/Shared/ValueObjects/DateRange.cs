@@ -1,3 +1,5 @@
+using GymManagement.Domain.Shared;
+
 namespace GymManagement.Domain.Shared.ValueObjects;
 
 public sealed class DateRange : ValueObject
@@ -14,21 +16,19 @@ public sealed class DateRange : ValueObject
     public static DateRange Create(DateOnly start, DateOnly end)
     {
         if (start >= end)
-            throw new ArgumentException("Start date must be before end date.");
+            throw new DomainValidationError("DateRange.InvalidRange", "Start date must be before end date.");
         return new DateRange(start, end);
     }
 
     public static DateRange CreateFromMonths(DateOnly start, int months)
     {
         if (months <= 0)
-            throw new ArgumentException("Duration must be positive.", nameof(months));
+            throw new DomainValidationError("DateRange.InvalidDuration", "Duration must be positive.");
         var end = start.AddMonths(months);
         return new DateRange(start, end);
     }
 
     public bool IsActive(DateOnly today) => today >= Start && today <= End;
-
-    public bool IsActive() => IsActive(DateOnly.FromDateTime(DateTime.UtcNow));
 
     protected override IEnumerable<object?> GetAtomicValues()
     {

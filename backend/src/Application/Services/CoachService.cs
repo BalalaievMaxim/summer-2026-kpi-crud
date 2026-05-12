@@ -8,6 +8,7 @@ namespace GymManagement.Application.Services;
 
 public class CoachService(
     ICoachRepository coachRepository,
+    IPasswordHasher passwordHasher,
     IUnitOfWork unitOfWork) : ICoachService
 {
     public Task<Coach?> GetByIdAsync(int id)
@@ -24,7 +25,7 @@ public class CoachService(
         if (await coachRepository.ExistsByEmailAsync(dto.Email))
             throw new CoachEmailAlreadyExistsError(dto.Email);
 
-        var coach = Coach.Create(dto.Name, dto.Email, dto.Specialization, dto.Password);
+        var coach = Coach.Create(dto.Name, dto.Email, dto.Specialization, dto.Password, passwordHasher);
         var created = await coachRepository.AddAsync(coach);
         await unitOfWork.SaveChangesAsync();
         return created;

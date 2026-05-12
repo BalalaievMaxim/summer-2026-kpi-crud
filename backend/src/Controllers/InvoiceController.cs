@@ -2,7 +2,6 @@ using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Billing;
 using GymManagement.Domain.Billing.Errors;
-using GymManagement.Domain.Queries;
 using GymManagement.Domain.Shared;
 using GymManagement.Application.Exceptions;
 using Microsoft.AspNetCore.Authorization;

@@ -1,6 +1,7 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Memberships;
+using GymManagement.Domain.Memberships.Errors;
 using GymManagement.Domain.Ports;
 
 namespace GymManagement.Application.Services;
@@ -12,16 +13,10 @@ public sealed class MembershipPlanService(
 {
     public async Task CreatePlanAsync(CreateMembershipPlanDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            throw new ArgumentException("Plan name cannot be empty.");
-
-        if (dto.DurationMonth <= 0)
-            throw new ArgumentException("Duration must be greater than 0.");
-
-        if (dto.Price <= 0)
-            throw new ArgumentException("Price must be greater than 0.");
-
-        var plan = new MembershipPlanSnapshot(PlanId: 0, dto.Name, dto.DurationMonth, dto.Price);
+        var plan = MembershipPlan.Create(
+            dto.Name,
+            dto.DurationMonth,
+            dto.Price);
 
         await membershipPlanRepository.AddAsync(plan);
         await unitOfWork.SaveChangesAsync();
@@ -29,22 +24,33 @@ public sealed class MembershipPlanService(
 
     public async Task DeleteUnusedPlanAsync(int planId)
     {
-        var plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(planId);
+        var plan = await membershipPlanRepository.GetByIdAsync(planId);
         if (plan is null)
-            throw new KeyNotFoundException($"Membership plan with ID {planId} not found.");
+            throw new MembershipPlanNotFoundError(planId);
 
-        var activeMemberships = await membershipRepository.GetAllActiveMembershipReferencedOnMembershipPlan(planId);
+        var hasActiveMemberships = await membershipRepository.HasActiveMembershipsForPlanAsync(
+            planId,
+            DateOnly.FromDateTime(DateTime.UtcNow));
 
-        if (activeMemberships.Count > 0)
-            throw new InvalidOperationException("Cannot delete plan. There are active memberships associated with it.");
+        if (hasActiveMemberships)
+            throw new MembershipPlanInUseError(planId);
 
         await membershipPlanRepository.DeleteMembershipPlanAsync(planId);
         await unitOfWork.SaveChangesAsync();
     }
 
-    public Task<List<MembershipPlanSnapshot>> GetPlansAsync(decimal? minPrice, decimal? maxPrice)
-        => membershipPlanRepository.GetPlansAsync(minPrice, maxPrice);
+    public async Task<List<MembershipPlanDto>> GetPlansAsync(decimal? minPrice, decimal? maxPrice)
+    {
+        var plans = await membershipPlanRepository.GetPlansAsync(minPrice, maxPrice);
+        return plans.Select(ToDto).ToList();
+    }
 
-    public Task<MembershipPlanSnapshot?> GetPlanByIdAsync(int id)
-        => membershipPlanRepository.GetMembershipPlanByIdAsync(id);
+    public async Task<MembershipPlanDto?> GetPlanByIdAsync(int id)
+    {
+        var plan = await membershipPlanRepository.GetByIdAsync(id);
+        return plan is null ? null : ToDto(plan);
+    }
+
+    private static MembershipPlanDto ToDto(MembershipPlan plan)
+        => new(plan.Id, plan.Name, plan.DurationMonths, plan.Price.Amount);
 }

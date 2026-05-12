@@ -100,7 +100,7 @@ public class TimeRangeTests
         var pastEnd = pastStart.AddHours(1);
         var range = TimeRange.Create(pastStart, pastEnd);
 
-        range.IsInPast().Should().BeTrue();
+        range.IsInPast(DateTimeOffset.UtcNow).Should().BeTrue();
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class TimeRangeTests
         var futureEnd = futureStart.AddHours(2);
         var range = TimeRange.Create(futureStart, futureEnd);
 
-        range.IsInPast().Should().BeFalse();
+        range.IsInPast(DateTimeOffset.UtcNow).Should().BeFalse();
     }
 
 

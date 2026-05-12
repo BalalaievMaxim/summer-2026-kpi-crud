@@ -11,17 +11,21 @@ public class CoachTests
     private const string ValidEmail = "maria@gym.com";
     private const string ValidSpec = "Yoga";
     private const string ValidPassword = "pass1234";
+    private static readonly TestPasswordHasher Hasher = new();
+
+    private static Coach CreateCoach()
+        => Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword, Hasher);
 
     [Fact]
     public void Create_ValidData_ReturnsCoach()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
+        var coach = CreateCoach();
 
         coach.Name.Value.Should().Be(ValidName);
         coach.Email.Value.Should().Be(ValidEmail);
         coach.Specialization.Value.Should().Be(ValidSpec);
-        coach.MatchesPassword(ValidPassword).Should().BeTrue();
-        coach.Password.Value.Should().StartWith("$2");
+        coach.MatchesPassword(ValidPassword, Hasher).Should().BeTrue();
+        coach.Password.Value.Should().Be("test-hash:pass1234");
         coach.Id.Should().Be(0);
     }
 
@@ -30,21 +34,21 @@ public class CoachTests
     [InlineData("   ")]
     public void Create_EmptyName_ThrowsInvalidCoachNameError(string name)
     {
-        var act = () => Coach.Create(name, ValidEmail, ValidSpec, ValidPassword);
+        var act = () => Coach.Create(name, ValidEmail, ValidSpec, ValidPassword, Hasher);
         act.Should().Throw<InvalidCoachNameError>();
     }
 
     [Fact]
     public void Create_InvalidEmail_ThrowsInvalidEmailError()
     {
-        var act = () => Coach.Create(ValidName, "bad-email", ValidSpec, ValidPassword);
+        var act = () => Coach.Create(ValidName, "bad-email", ValidSpec, ValidPassword, Hasher);
         act.Should().Throw<InvalidEmailError>();
     }
 
     [Fact]
     public void Create_EmptySpecialization_ThrowsInvalidSpecializationError()
     {
-        var act = () => Coach.Create(ValidName, ValidEmail, "  ", ValidPassword);
+        var act = () => Coach.Create(ValidName, ValidEmail, "  ", ValidPassword, Hasher);
         act.Should().Throw<InvalidSpecializationError>();
     }
 
@@ -53,14 +57,14 @@ public class CoachTests
     [InlineData("abc")]
     public void Create_ShortPassword_ThrowsInvalidPasswordError(string password)
     {
-        var act = () => Coach.Create(ValidName, ValidEmail, ValidSpec, password);
+        var act = () => Coach.Create(ValidName, ValidEmail, ValidSpec, password, Hasher);
         act.Should().Throw<InvalidPasswordError>();
     }
 
     [Fact]
     public void UpdateSpecialization_ValidValue_Updates()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
+        var coach = CreateCoach();
 
         coach.UpdateSpecialization("CrossFit");
 
@@ -70,7 +74,7 @@ public class CoachTests
     [Fact]
     public void UpdateSpecialization_TooLong_ThrowsInvalidSpecializationError()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
+        var coach = CreateCoach();
         var act = () => coach.UpdateSpecialization(new string('x', 101));
         act.Should().Throw<InvalidSpecializationError>();
     }
@@ -78,7 +82,7 @@ public class CoachTests
     [Fact]
     public void UpdateName_ValidName_Updates()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
+        var coach = CreateCoach();
 
         coach.UpdateName("Ivan Petrenko");
 
@@ -88,7 +92,7 @@ public class CoachTests
     [Fact]
     public void UpdateName_EmptyName_ThrowsInvalidCoachNameError()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
+        var coach = CreateCoach();
         var act = () => coach.UpdateName("   ");
         act.Should().Throw<InvalidCoachNameError>();
     }
@@ -96,7 +100,7 @@ public class CoachTests
     [Fact]
     public void UpdateEmail_ValidEmail_Updates()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
+        var coach = CreateCoach();
 
         coach.UpdateEmail("newemail@gym.com");
 
@@ -106,7 +110,7 @@ public class CoachTests
     [Fact]
     public void UpdateEmail_InvalidEmail_ThrowsInvalidEmailError()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
+        var coach = CreateCoach();
         var act = () => coach.UpdateEmail("not-an-email");
         act.Should().Throw<InvalidEmailError>();
     }
@@ -114,41 +118,41 @@ public class CoachTests
     [Fact]
     public void MatchesPassword_CorrectPassword_ReturnsTrue()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
-        coach.MatchesPassword(ValidPassword).Should().BeTrue();
+        var coach = CreateCoach();
+        coach.MatchesPassword(ValidPassword, Hasher).Should().BeTrue();
     }
 
     [Fact]
     public void MatchesPassword_WrongPassword_ReturnsFalse()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
-        coach.MatchesPassword("wrongpass").Should().BeFalse();
+        var coach = CreateCoach();
+        coach.MatchesPassword("wrongpass", Hasher).Should().BeFalse();
     }
 
     [Fact]
     public void ChangePassword_ValidCurrentPassword_ChangesPassword()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
+        var coach = CreateCoach();
 
-        coach.ChangePassword(ValidPassword, "newpass99");
+        coach.ChangePassword(ValidPassword, "newpass99", Hasher);
 
-        coach.MatchesPassword("newpass99").Should().BeTrue();
-        coach.MatchesPassword(ValidPassword).Should().BeFalse();
+        coach.MatchesPassword("newpass99", Hasher).Should().BeTrue();
+        coach.MatchesPassword(ValidPassword, Hasher).Should().BeFalse();
     }
 
     [Fact]
     public void ChangePassword_WrongCurrentPassword_ThrowsInvalidCoachCredentialsError()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
-        var act = () => coach.ChangePassword("wrongpass", "newpass99");
+        var coach = CreateCoach();
+        var act = () => coach.ChangePassword("wrongpass", "newpass99", Hasher);
         act.Should().Throw<InvalidCoachCredentialsError>();
     }
 
     [Fact]
     public void ChangePassword_ShortNewPassword_ThrowsInvalidPasswordError()
     {
-        var coach = Coach.Create(ValidName, ValidEmail, ValidSpec, ValidPassword);
-        var act = () => coach.ChangePassword(ValidPassword, "abc");
+        var coach = CreateCoach();
+        var act = () => coach.ChangePassword(ValidPassword, "abc", Hasher);
         act.Should().Throw<InvalidPasswordError>();
     }
 

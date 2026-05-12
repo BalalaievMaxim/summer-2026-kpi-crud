@@ -1,6 +1,7 @@
 using FluentAssertions;
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services;
+using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Ports;
@@ -13,11 +14,12 @@ public class ClientServiceTests
     private readonly Mock<IClientRepository> _clientRepoMock = new();
     private readonly Mock<IClientAnalyticsRepository> _analyticsMock = new();
     private readonly Mock<IUnitOfWork> _uowMock = new();
+    private readonly TestPasswordHasher _passwordHasher = new();
     private readonly ClientService _service;
 
     public ClientServiceTests()
     {
-        _service = new ClientService(_clientRepoMock.Object, _analyticsMock.Object, _uowMock.Object);
+        _service = new ClientService(_clientRepoMock.Object, _analyticsMock.Object, _passwordHasher, _uowMock.Object);
     }
 
     [Fact]
@@ -49,7 +51,7 @@ public class ClientServiceTests
     [Fact]
     public async Task LoginClientAsync_ValidCredentials_ReturnsClient()
     {
-        var client = Client.Reconstitute(1, "John", "john@test.com", "+380671234567", "pass1234");
+        var client = Client.Reconstitute(1, "John", "john@test.com", "+380671234567", _passwordHasher.Hash("pass1234"));
         _clientRepoMock.Setup(r => r.GetByEmailAsync("john@test.com", default)).ReturnsAsync(client);
 
         var result = await _service.LoginClientAsync("john@test.com", "pass1234");
@@ -60,7 +62,7 @@ public class ClientServiceTests
     [Fact]
     public async Task LoginClientAsync_WrongPassword_ThrowsInvalidCredentialsError()
     {
-        var client = Client.Reconstitute(1, "John", "john@test.com", "+380671234567", "pass1234");
+        var client = Client.Reconstitute(1, "John", "john@test.com", "+380671234567", _passwordHasher.Hash("pass1234"));
         _clientRepoMock.Setup(r => r.GetByEmailAsync("john@test.com", default)).ReturnsAsync(client);
 
         var act = async () => await _service.LoginClientAsync("john@test.com", "wrongpass");

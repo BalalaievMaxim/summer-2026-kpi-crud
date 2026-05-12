@@ -1,6 +1,6 @@
-using GymManagement.Domain.Queries;
+using GymManagement.Application.DTOs;
 
-namespace GymManagement.Domain.Ports;
+namespace GymManagement.Application.Services.Interfaces;
 
 public interface IClientAnalyticsRepository
 {

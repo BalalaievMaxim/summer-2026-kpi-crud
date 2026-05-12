@@ -1,14 +1,15 @@
 using FluentAssertions;
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services;
-using GymManagement.Domain.Classes;
 using GymManagement.Domain.Clients;
+using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Enrollments;
 using GymManagement.Domain.Enrollments.Errors;
-using GymManagement.Domain.Classes.Errors;
 using GymManagement.Domain.Memberships;
 using GymManagement.Domain.Ports;
+using GymManagement.Domain.Shared.ValueObjects;
 using Moq;
+using DomainClass = GymManagement.Domain.Classes.Class;
 
 namespace GymManagement.Tests.Unit.Services;
 
@@ -16,7 +17,7 @@ public sealed class EnrollmentServiceTests
 {
     private readonly Mock<IEnrollmentRepositoryPort> _enrollmentRepoMock;
     private readonly Mock<IClientRepository> _clientRepoMock;
-    private readonly Mock<IClassScheduleRepository> _classRepoMock;
+    private readonly Mock<IClassRepositoryPort> _classRepoMock;
     private readonly Mock<IMembershipRepositoryPort> _membershipRepoMock;
     private readonly EnrollmentService _service;
 
@@ -24,27 +25,38 @@ public sealed class EnrollmentServiceTests
     {
         _enrollmentRepoMock = new Mock<IEnrollmentRepositoryPort>();
         _clientRepoMock = new Mock<IClientRepository>();
-        _classRepoMock = new Mock<IClassScheduleRepository>();
+        _classRepoMock = new Mock<IClassRepositoryPort>();
         _membershipRepoMock = new Mock<IMembershipRepositoryPort>();
 
-        var factory = new EnrollmentFactory(_classRepoMock.Object, _enrollmentRepoMock.Object);
+        var factory = new EnrollmentFactory(_classRepoMock.Object);
 
         _service = new EnrollmentService(
             _enrollmentRepoMock.Object,
             _clientRepoMock.Object,
-            _classRepoMock.Object,
             _membershipRepoMock.Object,
             factory);
     }
 
-    private static GymClassDetails Session(int classId, int capacity, params int[] enrollmentClients)
-        => new(classId, 1, "t", 1, "c", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(1).AddHours(1), capacity, enrollmentClients);
+    private static DomainClass Session(int classId, int capacity, params int[] enrollmentClients)
+    {
+        var schedule = TimeRange.Create(DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow.AddDays(1).AddHours(1));
+        var enrollments = enrollmentClients.Select((clientId, index) =>
+            Enrollment.Reconstitute(index + 1, clientId, classId, DateTimeOffset.UtcNow));
+
+        return DomainClass.Reconstitute(classId, 1, 1, schedule, capacity, enrollments);
+    }
 
     private void SetupActiveMembership(int clientId)
         => _membershipRepoMock.Setup(r => r.GetActiveMembershipsByClientAsync(clientId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<MembershipRecord>
+            .ReturnsAsync(new List<Membership>
             {
-                new(1, clientId, 1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)), DateOnly.FromDateTime(DateTime.UtcNow.AddDays(10)), true)
+                Membership.Reconstitute(
+                    1,
+                    clientId,
+                    1,
+                    DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)),
+                    DateOnly.FromDateTime(DateTime.UtcNow.AddDays(10)),
+                    true)
             });
 
     [Fact]
@@ -54,9 +66,8 @@ public sealed class EnrollmentServiceTests
 
         _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         SetupActiveMembership(1);
-        _classRepoMock.Setup(r => r.GetByIdWithEnrollmentsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Session(1, 10));
-        _enrollmentRepoMock.Setup(r => r.IsClientEnrolledAsync(1, 1, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        _enrollmentRepoMock.Setup(r => r.AddAsync(1, 1, It.IsAny<DateTime>(), It.IsAny<CancellationToken>())).ReturnsAsync(42);
+        _classRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Session(1, 10));
+        _enrollmentRepoMock.Setup(r => r.AddAsync(It.IsAny<Enrollment>(), It.IsAny<CancellationToken>())).ReturnsAsync(42);
 
         var result = await _service.CreateEnrollmentAsync(dto);
 
@@ -64,7 +75,9 @@ public sealed class EnrollmentServiceTests
         result.ClientId.Should().Be(1);
         result.ClassId.Should().Be(1);
 
-        _enrollmentRepoMock.Verify(r => r.AddAsync(1, 1, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
+        _enrollmentRepoMock.Verify(r => r.AddAsync(It.Is<Enrollment>(e =>
+            e.ClientId == 1 &&
+            e.ClassId == 1), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -74,13 +87,13 @@ public sealed class EnrollmentServiceTests
 
         _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         SetupActiveMembership(1);
-        _classRepoMock.Setup(r => r.GetByIdWithEnrollmentsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Session(1, 1, 2));
+        _classRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Session(1, 1, 2));
 
         var act = async () => await _service.CreateEnrollmentAsync(dto);
 
         await act.Should().ThrowAsync<ClassFullError>();
 
-        _enrollmentRepoMock.Verify(r => r.AddAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+        _enrollmentRepoMock.Verify(r => r.AddAsync(It.IsAny<Enrollment>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -90,12 +103,11 @@ public sealed class EnrollmentServiceTests
 
         _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _membershipRepoMock.Setup(r => r.GetActiveMembershipsByClientAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<MembershipRecord>());
+            .ReturnsAsync(new List<Membership>());
 
         var act = async () => await _service.CreateEnrollmentAsync(dto);
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Client does not have an active membership.");
+        await act.Should().ThrowAsync<ClientHasNoActiveMembershipError>();
     }
 
     [Fact]
@@ -105,11 +117,10 @@ public sealed class EnrollmentServiceTests
 
         _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         SetupActiveMembership(1);
-        _classRepoMock.Setup(r => r.GetByIdWithEnrollmentsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Session(1, 10));
-        _enrollmentRepoMock.Setup(r => r.IsClientEnrolledAsync(1, 1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _classRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(Session(1, 10, 1));
 
         var act = async () => await _service.CreateEnrollmentAsync(dto);
 
-        await act.Should().ThrowAsync<ClientAlreadyEnrolledError>();
+        await act.Should().ThrowAsync<DuplicateEnrollmentError>();
     }
 }

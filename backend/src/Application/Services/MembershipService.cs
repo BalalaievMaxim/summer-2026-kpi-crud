@@ -1,7 +1,10 @@
+using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Billing;
 using GymManagement.Domain.Clients;
+using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Memberships;
+using GymManagement.Domain.Memberships.Errors;
 using GymManagement.Domain.Ports;
 
 namespace GymManagement.Application.Services;
@@ -17,39 +20,37 @@ public sealed class MembershipService(
     public async Task PurchaseMembershipAsync(int clientId, int planId, PaymentMethod method, string? notes)
     {
         if (!await clientRepository.ExistsAsync(clientId))
-            throw new KeyNotFoundException($"Client with ID {clientId} not found.");
+            throw new ClientNotFoundError(clientId);
 
-        var plan = await membershipPlanRepository.GetMembershipPlanByIdAsync(planId);
+        var plan = await membershipPlanRepository.GetByIdAsync(planId);
         if (plan is null)
-            throw new KeyNotFoundException($"Membership plan with ID {planId} not found.");
+            throw new MembershipPlanNotFoundError(planId);
 
-        if (await HasClientCertainActiveMembership(clientId, planId))
-            throw new InvalidOperationException("Client already has an active membership for this plan.");
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (await membershipRepository.HasActiveMembershipForPlanAsync(clientId, planId, today))
+            throw new ActiveMembershipExistsError(clientId, planId);
 
         await invoiceService.CreateInvoiceAsync(clientId, method, planId, notes);
 
-        var membership = new MembershipRecord(
-            MembershipId: 0,
-            ClientId: clientId,
-            PlanId: planId,
-            StartDate: DateOnly.FromDateTime(DateTime.Now),
-            EndDate: DateOnly.FromDateTime(DateTime.Now).AddMonths(plan.DurationMonths),
-            IsActive: false);
+        var membership = Membership.PurchasePending(clientId, plan, today);
 
         await membershipRepository.AddAsync(membership);
 
         await unitOfWork.SaveChangesAsync();
     }
 
-    public async Task<IReadOnlyList<MembershipRecord>> GetActiveMembershipsByClientAsync(int clientId)
+    public async Task<IReadOnlyList<MembershipDto>> GetActiveMembershipsByClientAsync(int clientId)
     {
         var list = await membershipRepository.GetActiveMembershipsByClientAsync(clientId);
-        return list;
+        return list.Select(ToDto).ToList();
     }
 
-    private async Task<bool> HasClientCertainActiveMembership(int clientId, int planId)
-    {
-        var memberships = await membershipRepository.GetActiveMembershipsByClientAsync(clientId);
-        return memberships.Any(m => m.PlanId == planId && m.IsActive);
-    }
+    private static MembershipDto ToDto(Membership membership)
+        => new(
+            membership.Id,
+            membership.ClientId,
+            membership.PlanId,
+            membership.Period.Start,
+            membership.Period.End,
+            membership.IsActive);
 }

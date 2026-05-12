@@ -10,17 +10,21 @@ public class ClientTests
     private const string ValidEmail = "john@example.com";
     private const string ValidPhone = "+380671234567";
     private const string ValidPassword = "pass1234";
+    private static readonly TestPasswordHasher Hasher = new();
+
+    private static Client CreateClient()
+        => Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword, Hasher);
 
     [Fact]
     public void Create_ValidData_ReturnsClient()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var client = CreateClient();
 
         client.Name.Value.Should().Be(ValidName);
         client.Email.Value.Should().Be(ValidEmail);
         client.Phone.Value.Should().Be(ValidPhone);
-        client.MatchesPassword(ValidPassword).Should().BeTrue();
-        client.Password.Value.Should().StartWith("$2");
+        client.MatchesPassword(ValidPassword, Hasher).Should().BeTrue();
+        client.Password.Value.Should().Be("test-hash:pass1234");
         client.Id.Should().Be(0);
     }
 
@@ -29,21 +33,21 @@ public class ClientTests
     [InlineData("   ")]
     public void Create_EmptyName_ThrowsInvalidClientNameError(string name)
     {
-        var act = () => Client.Create(name, ValidEmail, ValidPhone, ValidPassword);
+        var act = () => Client.Create(name, ValidEmail, ValidPhone, ValidPassword, Hasher);
         act.Should().Throw<InvalidClientNameError>();
     }
 
     [Fact]
     public void Create_InvalidEmail_ThrowsInvalidEmailError()
     {
-        var act = () => Client.Create(ValidName, "not-an-email", ValidPhone, ValidPassword);
+        var act = () => Client.Create(ValidName, "not-an-email", ValidPhone, ValidPassword, Hasher);
         act.Should().Throw<InvalidEmailError>();
     }
 
     [Fact]
     public void Create_InvalidPhone_ThrowsInvalidPhoneNumberError()
     {
-        var act = () => Client.Create(ValidName, ValidEmail, "abc", ValidPassword);
+        var act = () => Client.Create(ValidName, ValidEmail, "abc", ValidPassword, Hasher);
         act.Should().Throw<InvalidPhoneNumberError>();
     }
 
@@ -52,14 +56,14 @@ public class ClientTests
     [InlineData("abc")]
     public void Create_ShortPassword_ThrowsInvalidPasswordError(string password)
     {
-        var act = () => Client.Create(ValidName, ValidEmail, ValidPhone, password);
+        var act = () => Client.Create(ValidName, ValidEmail, ValidPhone, password, Hasher);
         act.Should().Throw<InvalidPasswordError>();
     }
 
     [Fact]
     public void UpdateContact_ValidData_UpdatesEmailAndPhone()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var client = CreateClient();
 
         client.UpdateContact("new@example.com", "+380679999999");
 
@@ -70,7 +74,7 @@ public class ClientTests
     [Fact]
     public void UpdateContact_InvalidEmail_Throws()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var client = CreateClient();
         var act = () => client.UpdateContact("bad-email", ValidPhone);
         act.Should().Throw<InvalidEmailError>();
     }
@@ -78,7 +82,7 @@ public class ClientTests
     [Fact]
     public void UpdateName_ValidName_Updates()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var client = CreateClient();
 
         client.UpdateName("Jane Smith");
 
@@ -88,7 +92,7 @@ public class ClientTests
     [Fact]
     public void UpdateName_EmptyName_ThrowsInvalidClientNameError()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var client = CreateClient();
         var act = () => client.UpdateName("   ");
         act.Should().Throw<InvalidClientNameError>();
     }
@@ -96,41 +100,41 @@ public class ClientTests
     [Fact]
     public void MatchesPassword_CorrectPassword_ReturnsTrue()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
-        client.MatchesPassword(ValidPassword).Should().BeTrue();
+        var client = CreateClient();
+        client.MatchesPassword(ValidPassword, Hasher).Should().BeTrue();
     }
 
     [Fact]
     public void MatchesPassword_WrongPassword_ReturnsFalse()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
-        client.MatchesPassword("wrongpass").Should().BeFalse();
+        var client = CreateClient();
+        client.MatchesPassword("wrongpass", Hasher).Should().BeFalse();
     }
 
     [Fact]
     public void ChangePassword_ValidCurrentPassword_ChangesPassword()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
+        var client = CreateClient();
 
-        client.ChangePassword(ValidPassword, "newpass99");
+        client.ChangePassword(ValidPassword, "newpass99", Hasher);
 
-        client.MatchesPassword("newpass99").Should().BeTrue();
-        client.MatchesPassword(ValidPassword).Should().BeFalse();
+        client.MatchesPassword("newpass99", Hasher).Should().BeTrue();
+        client.MatchesPassword(ValidPassword, Hasher).Should().BeFalse();
     }
 
     [Fact]
     public void ChangePassword_WrongCurrentPassword_ThrowsInvalidCredentialsError()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
-        var act = () => client.ChangePassword("wrongpass", "newpass99");
+        var client = CreateClient();
+        var act = () => client.ChangePassword("wrongpass", "newpass99", Hasher);
         act.Should().Throw<InvalidCredentialsError>();
     }
 
     [Fact]
     public void ChangePassword_ShortNewPassword_ThrowsInvalidPasswordError()
     {
-        var client = Client.Create(ValidName, ValidEmail, ValidPhone, ValidPassword);
-        var act = () => client.ChangePassword(ValidPassword, "abc");
+        var client = CreateClient();
+        var act = () => client.ChangePassword(ValidPassword, "abc", Hasher);
         act.Should().Throw<InvalidPasswordError>();
     }
 

@@ -1,14 +1,14 @@
+using GymManagement.Application.DTOs;
 using GymManagement.Application.Exceptions;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Billing;
-using GymManagement.Domain.Billing.Errors;
 using GymManagement.Domain.Ports;
-using GymManagement.Domain.Queries;
 
 namespace GymManagement.Application.Services;
 
 public sealed class InvoiceService(
     IInvoiceRepositoryPort invoiceRepository,
+    IInvoiceAnalyticsRepository invoiceAnalyticsRepository,
     IMembershipRepositoryPort membershipRepository,
     InvoiceFactory invoiceFactory,
     IUnitOfWork unitOfWork
@@ -20,7 +20,12 @@ public sealed class InvoiceService(
         int membershipPlanId,
         string? notes)
     {
-        var invoice = await invoiceFactory.CreateForPlanAsync(clientId, membershipPlanId, method, notes);
+        var invoice = await invoiceFactory.CreateForPlanAsync(
+            clientId,
+            membershipPlanId,
+            method,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            notes);
 
         var newId = await invoiceRepository.AddAsync(invoice);
 
@@ -41,7 +46,10 @@ public sealed class InvoiceService(
 
         var membership = await membershipRepository.GetPendingMembershipByClientAsync(invoice.ClientId);
         if (membership is not null)
-            await membershipRepository.MarkAsActiveMembershipAsync(membership.MembershipId);
+        {
+            membership.Activate();
+            await membershipRepository.UpdateAsync(membership);
+        }
 
         await unitOfWork.SaveChangesAsync();
     }
@@ -50,7 +58,7 @@ public sealed class InvoiceService(
         => invoiceRepository.GetPendingInvoicesAsync(clientId);
 
     public Task<List<TotalMembershipRevenueRow>> GetMonthlyRevenueAnalyticsAsync()
-        => invoiceRepository.GetMonthlyRevenueByPlanAsync();
+        => invoiceAnalyticsRepository.GetMonthlyRevenueByPlanAsync();
 
     private static InvoiceRecord ToRecord(Invoice invoice, int id) =>
         new(

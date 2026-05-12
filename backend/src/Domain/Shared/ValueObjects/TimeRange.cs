@@ -28,8 +28,8 @@ public sealed class TimeRange : ValueObject
     public bool OverlapsWith(TimeRange other)
         => Start < other.End && other.Start < End;
 
-    public bool IsInPast()
-        => Start < DateTimeOffset.UtcNow;
+    public bool IsInPast(DateTimeOffset now)
+        => Start < now;
 
     protected override IEnumerable<object?> GetAtomicValues()
     {

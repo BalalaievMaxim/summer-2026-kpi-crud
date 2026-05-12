@@ -1,9 +1,7 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Services.Interfaces;
-using GymManagement.Domain.Ports;
 using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Shared;
-using GymManagement.Domain.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

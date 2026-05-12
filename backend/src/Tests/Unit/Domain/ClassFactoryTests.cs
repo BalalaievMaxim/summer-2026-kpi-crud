@@ -10,10 +10,11 @@ namespace GymManagement.Tests.Unit.Domain;
 
 public class ClassFactoryTests
 {
-    private readonly Mock<IClassScheduleRepository> _classRepoMock = new();
+    private readonly Mock<IClassRepositoryPort> _classRepoMock = new();
     private readonly Mock<ICoachRepository> _coachRepoMock = new();
     private readonly ClassFactory _factory;
 
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
     private static readonly DateTimeOffset FutureStart = DateTimeOffset.UtcNow.AddDays(1);
     private static readonly DateTimeOffset FutureEnd = DateTimeOffset.UtcNow.AddDays(1).AddHours(2);
 
@@ -54,7 +55,7 @@ public class ClassFactoryTests
 
         var result = await _factory.CreateAsync(
             classTypeId: 1, coachId: 1,
-            start: FutureStart, end: FutureEnd, capacity: 20);
+            start: FutureStart, end: FutureEnd, capacity: 20, now: Now);
 
         result.Should().NotBeNull();
         result.ClassTypeId.Should().Be(1);
@@ -66,7 +67,14 @@ public class ClassFactoryTests
     [Fact]
     public async Task CreateAsync_ZeroCapacity_ThrowsInvalidCapacityError()
     {
-        var act = () => _factory.CreateAsync(1, 1, FutureStart, FutureEnd, capacity: 0);
+        var act = () => _factory.CreateAsync(1, 1, FutureStart, FutureEnd, capacity: 0, now: Now);
+        await act.Should().ThrowAsync<InvalidCapacityError>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_CapacityAboveDatabaseLimit_ThrowsInvalidCapacityError()
+    {
+        var act = () => _factory.CreateAsync(1, 1, FutureStart, FutureEnd, capacity: Class.MaxCapacity + 1, now: Now);
         await act.Should().ThrowAsync<InvalidCapacityError>();
     }
 
@@ -76,7 +84,7 @@ public class ClassFactoryTests
         var pastStart = DateTimeOffset.UtcNow.AddDays(-2);
         var pastEnd = pastStart.AddHours(1);
 
-        var act = () => _factory.CreateAsync(1, 1, pastStart, pastEnd, capacity: 10);
+        var act = () => _factory.CreateAsync(1, 1, pastStart, pastEnd, capacity: 10, now: Now);
         await act.Should().ThrowAsync<ClassInPastError>();
     }
 
@@ -86,7 +94,7 @@ public class ClassFactoryTests
         var start = DateTimeOffset.UtcNow.AddDays(1);
         var end = start.AddHours(-1);
 
-        var act = () => _factory.CreateAsync(1, 1, start, end, capacity: 10);
+        var act = () => _factory.CreateAsync(1, 1, start, end, capacity: 10, now: Now);
         await act.Should().ThrowAsync<InvalidTimeRangeError>();
     }
 
@@ -98,7 +106,7 @@ public class ClassFactoryTests
             .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Coach?)null);
 
-        var act = () => _factory.CreateAsync(1, coachId: 99, FutureStart, FutureEnd, capacity: 10);
+        var act = () => _factory.CreateAsync(1, coachId: 99, FutureStart, FutureEnd, capacity: 10, now: Now);
         await act.Should().ThrowAsync<CoachNotFoundForClassError>();
     }
 
@@ -108,7 +116,7 @@ public class ClassFactoryTests
         SetupCoachExists();
         SetupScheduleConflict();
 
-        var act = () => _factory.CreateAsync(1, 1, FutureStart, FutureEnd, capacity: 10);
+        var act = () => _factory.CreateAsync(1, 1, FutureStart, FutureEnd, capacity: 10, now: Now);
         await act.Should().ThrowAsync<CoachScheduleConflictError>();
     }
 }
