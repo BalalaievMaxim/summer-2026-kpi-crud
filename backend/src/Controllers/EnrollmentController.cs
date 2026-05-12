@@ -9,7 +9,6 @@ namespace GymManagement.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/enrollments")]
-[Authorize]
 public sealed class EnrollmentController : ControllerBase
 {
     [HttpPost]

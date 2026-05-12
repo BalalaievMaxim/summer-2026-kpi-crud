@@ -1,5 +1,6 @@
 using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.DTOs;
+using GymManagement.Application.Features.Enrollments.Events;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Enrollments;
@@ -12,7 +13,8 @@ public sealed class CreateEnrollmentCommandHandler(
     IEnrollmentRepositoryPort enrollmentRepository,
     IClientRepository clientRepository,
     IMembershipRepositoryPort membershipRepository,
-    EnrollmentFactory enrollmentFactory) : ICommandHandler<CreateEnrollmentCommand, int>
+    EnrollmentFactory enrollmentFactory,
+    IEventBus eventBus) : ICommandHandler<CreateEnrollmentCommand, int>
 {
     public async Task<int> Handle(CreateEnrollmentCommand command, CancellationToken cancellationToken = default)
     {
@@ -27,7 +29,10 @@ public sealed class CreateEnrollmentCommandHandler(
             throw new ClientHasNoActiveMembershipError(command.ClientId);
 
         var enrollment = await enrollmentFactory.CreateAsync(command.ClientId, command.ClassId, DateTimeOffset.UtcNow, cancellationToken);
-        return await enrollmentRepository.AddAsync(enrollment, cancellationToken);
-}
-    }
+        var id = await enrollmentRepository.AddAsync(enrollment, cancellationToken);
 
+        await eventBus.PublishAsync(new EnrollmentCreatedEvent(command.ClientId, command.ClassId, DateTime.UtcNow), cancellationToken);
+
+        return id;
+    }
+}

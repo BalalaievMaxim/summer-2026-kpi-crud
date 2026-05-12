@@ -54,6 +54,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
+
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -86,6 +87,14 @@ builder.Services.AddScoped<InvoiceFactory>();
 
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
+builder.Services.AddScoped<GymManagement.Application.Services.Interfaces.INotificationService, GymManagement.Infrastructure.Notifications.EmailNotificationService>();
+builder.Services.AddSingleton(typeof(GymManagement.Application.Abstractions.Logging.IAppLogger<>), typeof(GymManagement.Infrastructure.Logging.LoggerAdapter<>));
+
+builder.Services.AddSingleton<GymManagement.Infrastructure.Messaging.InMemoryEventBus>();
+builder.Services.AddSingleton<GymManagement.Application.Abstractions.Messaging.IEventBus>(sp => sp.GetRequiredService<GymManagement.Infrastructure.Messaging.InMemoryEventBus>());
+builder.Services.AddHostedService<GymManagement.Infrastructure.Messaging.EventDispatcherBackgroundService>();
+builder.Services.AddScoped<GymManagement.Application.Abstractions.Messaging.IEventHandler<GymManagement.Application.Features.Enrollments.Events.EnrollmentCreatedEvent>, GymManagement.Application.Features.Enrollments.Events.Handlers.NotifyClientOnEnrollmentHandler>();
 
 builder.Services.AddScoped<ICommandHandler<CreateClassCommand, int>, CreateClassCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<RescheduleClassCommand>, RescheduleClassCommandHandler>();
@@ -121,8 +130,6 @@ builder.Services.AddScoped<IQueryHandler<GetCoachByIdQuery, CoachDto?>, GetCoach
 builder.Services.AddScoped<IQueryHandler<GetAllCoachesQuery, IReadOnlyList<CoachSummaryDto>>, GetAllCoachesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetCoachesBySpecializationQuery, IReadOnlyList<CoachSummaryDto>>, GetCoachesBySpecializationQueryHandler>();
 
-builder.Services.AddScoped<GymManagement.Application.Services.Interfaces.INotificationService, GymManagement.Infrastructure.Notifications.EmailNotificationService>();
-builder.Services.AddSingleton(typeof(GymManagement.Application.Abstractions.Logging.IAppLogger<>), typeof(GymManagement.Infrastructure.Logging.LoggerAdapter<>));
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
           ?? throw new InvalidOperationException("JWT options are not configured.");

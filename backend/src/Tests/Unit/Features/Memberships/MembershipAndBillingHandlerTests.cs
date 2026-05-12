@@ -1,4 +1,5 @@
 using FluentAssertions;
+using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Features.Enrollments.Commands.CreateEnrollment;
 using GymManagement.Application.Features.Invoices.Commands.CreateInvoice;
 using GymManagement.Application.Features.Invoices.Commands.MarkInvoicePaid;
@@ -29,6 +30,7 @@ public sealed class MembershipAndBillingHandlerTests
     private readonly Mock<IEnrollmentRepositoryPort> _enrollmentRepoMock = new();
     private readonly Mock<IClassRepositoryPort> _classRepoMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    private readonly Mock<IEventBus> _eventBusMock = new();
 
     private readonly InvoiceFactory _invoiceFactory;
     private readonly EnrollmentFactory _enrollmentFactory;
@@ -256,7 +258,8 @@ public sealed class MembershipAndBillingHandlerTests
             _enrollmentRepoMock.Object,
             _clientRepoMock.Object,
             _membershipRepoMock.Object,
-            _enrollmentFactory);
+            _enrollmentFactory,
+            _eventBusMock.Object);
 
         _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         SetupActiveMembership(1);
@@ -279,7 +282,8 @@ public sealed class MembershipAndBillingHandlerTests
             _enrollmentRepoMock.Object,
             _clientRepoMock.Object,
             _membershipRepoMock.Object,
-            _enrollmentFactory);
+            _enrollmentFactory,
+            _eventBusMock.Object);
 
         _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         SetupActiveMembership(1);
@@ -298,7 +302,8 @@ public sealed class MembershipAndBillingHandlerTests
             _enrollmentRepoMock.Object,
             _clientRepoMock.Object,
             _membershipRepoMock.Object,
-            _enrollmentFactory);
+            _enrollmentFactory,
+            _eventBusMock.Object);
 
         _clientRepoMock.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _membershipRepoMock.Setup(r => r.GetActiveMembershipsByClientAsync(1, It.IsAny<CancellationToken>()))
