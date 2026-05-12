@@ -1,6 +1,6 @@
 using GymManagement.Application.Abstractions.Messaging;
-using GymManagement.Application.Features.Clients;
-using GymManagement.Application.Features.Clients.ReadModels;
+using GymManagement.Application.DTOs;
+using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Ports;
@@ -9,9 +9,10 @@ namespace GymManagement.Application.Features.Auth.Queries.LoginClient;
 
 public sealed class LoginClientQueryHandler(
     IClientRepository clientRepository,
-    IPasswordHasher passwordHasher) : IQueryHandler<LoginClientQuery, ClientDto>
+    IPasswordHasher passwordHasher,
+    ITokenService tokenService) : IQueryHandler<LoginClientQuery, AuthResultDto>
 {
-    public async Task<ClientDto> Handle(LoginClientQuery query, CancellationToken cancellationToken = default)
+    public async Task<AuthResultDto> Handle(LoginClientQuery query, CancellationToken cancellationToken = default)
     {
         var client = await clientRepository.GetByEmailAsync(query.Email, cancellationToken)
             ?? throw new InvalidCredentialsError();
@@ -19,6 +20,15 @@ public sealed class LoginClientQueryHandler(
         if (!client.MatchesPassword(query.Password, passwordHasher))
             throw new InvalidCredentialsError();
 
-        return ClientMappings.ToDto(client);
+        // Application шар вирішує, як створити сесію
+        var token = tokenService.CreateToken(client.Id, client.Email.Value, "Client");
+
+        return new AuthResultDto(
+            client.Id,
+            client.Name.Value,
+            client.Email.Value,
+            client.Phone.Value,
+            token
+        );
     }
 }
