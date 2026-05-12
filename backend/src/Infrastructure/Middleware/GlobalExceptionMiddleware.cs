@@ -84,7 +84,5 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
            || code.Contains(".HasFuture", StringComparison.Ordinal)
            || code.Contains(".Conflict", StringComparison.Ordinal)
            || code.EndsWith(".ActiveExists", StringComparison.Ordinal)
-           || code.EndsWith(".AlreadyEnrolled", StringComparison.Ordinal)
-           || code.EndsWith(".DuplicateEnrollment", StringComparison.Ordinal)
-           || code.EndsWith(".Full", StringComparison.Ordinal);
+           || code.EndsWith(".AlreadyEnrolled", StringComparison.Ordinal);
 }

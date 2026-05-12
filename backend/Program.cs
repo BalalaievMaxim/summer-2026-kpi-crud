@@ -13,6 +13,17 @@ using GymManagement.Application.Features.Classes.Queries.GetCoachEfficiencyAnaly
 using GymManagement.Application.Features.Classes.Queries.GetCoachWorkload;
 using GymManagement.Application.Features.Classes.Queries.GetScheduleForDate;
 using GymManagement.Application.Features.Classes.Queries.GetScheduleForWeek;
+using GymManagement.Application.Features.Enrollments.Commands.CreateEnrollment;
+using GymManagement.Application.Features.Invoices.Commands.CreateInvoice;
+using GymManagement.Application.Features.Invoices.Commands.MarkInvoicePaid;
+using GymManagement.Application.Features.Invoices.Queries.GetMonthlyRevenueByPlan;
+using GymManagement.Application.Features.Invoices.Queries.GetPendingInvoicesForClient;
+using GymManagement.Application.Features.MembershipPlans.Commands.CreateMembershipPlan;
+using GymManagement.Application.Features.MembershipPlans.Commands.DeleteMembershipPlan;
+using GymManagement.Application.Features.MembershipPlans.Queries.GetMembershipPlanById;
+using GymManagement.Application.Features.MembershipPlans.Queries.GetMembershipPlans;
+using GymManagement.Application.Features.Memberships.Commands.PurchaseMembership;
+using GymManagement.Application.Features.Memberships.Queries.GetActiveMembershipsByClient;
 using GymManagement.Domain.Billing;
 using GymManagement.Domain.Classes;
 using GymManagement.Domain.Clients;
@@ -61,10 +72,6 @@ builder.Services.AddScoped<InvoiceFactory>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<ICoachService, CoachService>();
-builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<IMembershipService, MembershipService>();
-builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
-builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
 builder.Services.AddScoped<ICommandHandler<CreateClassCommand, int>, CreateClassCommandHandler>();
@@ -76,6 +83,17 @@ builder.Services.AddScoped<IQueryHandler<GetScheduleForWeekQuery, IReadOnlyList<
 builder.Services.AddScoped<IQueryHandler<GetClassAttendanceAnalyticsQuery, IReadOnlyList<ClassAttendanceRow>>, GetClassAttendanceAnalyticsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetCoachWorkloadQuery, CoachWorkloadRow>, GetCoachWorkloadQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetCoachEfficiencyAnalyticsQuery, List<CoachEfficiencyRow>>, GetCoachEfficiencyAnalyticsQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<PurchaseMembershipCommand>, PurchaseMembershipCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetActiveMembershipsByClientQuery, IReadOnlyList<MembershipDto>>, GetActiveMembershipsByClientQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateMembershipPlanCommand>, CreateMembershipPlanCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteMembershipPlanCommand>, DeleteMembershipPlanCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetMembershipPlansQuery, List<MembershipPlanDto>>, GetMembershipPlansQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetMembershipPlanByIdQuery, MembershipPlanDto?>, GetMembershipPlanByIdQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateInvoiceCommand, int>, CreateInvoiceCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<MarkInvoicePaidCommand>, MarkInvoicePaidCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPendingInvoicesForClientQuery, List<InvoiceRecord>>, GetPendingInvoicesForClientQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetMonthlyRevenueByPlanQuery, List<TotalMembershipRevenueRow>>, GetMonthlyRevenueByPlanQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateEnrollmentCommand, EnrollmentResultDto>, CreateEnrollmentCommandHandler>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
