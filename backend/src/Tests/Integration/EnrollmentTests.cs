@@ -29,7 +29,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         };
         Context.Classes.Add(gymClass);
 
-        var client = new Client { Name = "Клієнт ОК", Email = "ok@test.com", Phone = "111", Password = "p" };
+        var client = new Client { Name = "Клієнт ОК", Email = "ok@test.com", Phone = "+3800000001", Password = "p" };
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 
@@ -65,8 +65,8 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         Context.Classes.Add(gymClass);
         await Context.SaveChangesAsync();
 
-        var client1 = new Client { Name = "Клєінт1", Email = "c1@test.com", Phone = "111", Password = "p" };
-        var client2 = new Client { Name = "Клієнт2", Email = "c2@test.com", Phone = "222", Password = "p" };
+        var client1 = new Client { Name = "Клєінт1", Email = "c1@test.com", Phone = "+3800000002", Password = "p" };
+        var client2 = new Client { Name = "Клієнт2", Email = "c2@test.com", Phone = "+3800000003", Password = "p" };
         Context.Clients.AddRange(client1, client2);
         await Context.SaveChangesAsync();
 
@@ -104,7 +104,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         };
         Context.Classes.Add(gymClass);
 
-        var client = new Client { Name = "Неактивний клієнт", Email = "no@test.com", Phone = "000", Password = "p" };
+        var client = new Client { Name = "Неактивний клієнт", Email = "no@test.com", Phone = "+3800000004", Password = "p" };
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 
@@ -138,7 +138,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         };
         Context.Classes.Add(gymClass);
 
-        var client = new Client { Name = "Просрочений клієнт", Email = "expired@test.com", Phone = "999", Password = "p" };
+        var client = new Client { Name = "Просрочений клієнт", Email = "expired@test.com", Phone = "+3800000005", Password = "p" };
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 
@@ -177,7 +177,7 @@ public class EnrollmentTests(GymApiFactory factory) : BaseIntegrationTest(factor
         };
         Context.Classes.Add(gymClass);
 
-        var client = new Client { Name = "Наполегливий клієнт", Email = "duplicate@test.com", Phone = "888", Password = "p" };
+        var client = new Client { Name = "Наполегливий клієнт", Email = "duplicate@test.com", Phone = "+3800000006", Password = "p" };
         Context.Clients.Add(client);
         await Context.SaveChangesAsync();
 

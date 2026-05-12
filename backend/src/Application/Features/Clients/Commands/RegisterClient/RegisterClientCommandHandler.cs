@@ -41,7 +41,7 @@ public sealed class RegisterClientCommandHandler(
         {
             logger.LogWarning("Synchronous notification failed for client {0}. Reason: {1}", clientId, ex.Message);
         }
-        catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning("Synchronous notification timed out for client {0}. Reason: {1}", clientId, ex.Message);
         }
