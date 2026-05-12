@@ -25,12 +25,19 @@ public partial class GymManagementContext : DbContext
     public virtual DbSet<Invoice> Invoices { get; set; }
     public virtual DbSet<Membership> Memberships { get; set; }
     public virtual DbSet<MembershipPlan> Membershipplans { get; set; }
-    
-   
     public virtual DbSet<PlanAccess> PlanAccesses { get; set; }
+    public virtual DbSet<OutboxMessage> OutboxMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<OutboxMessage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("outbox_message");
+            entity.Property(e => e.Type).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Content).IsRequired();
+        });
+
         modelBuilder.Entity<Class>(entity =>
         {
             entity.HasKey(e => e.ClassId).HasName("class_pkey");
@@ -182,7 +189,6 @@ public partial class GymManagementContext : DbContext
         
         modelBuilder.Entity<PlanAccess>(entity =>
         {
-          
             entity.ToTable("planaccess"); 
             entity.HasKey(e => new { e.PlanId, e.ZoneId }).HasName("planaccess_pkey");
             

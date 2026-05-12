@@ -1,9 +1,12 @@
+using System;
 using GymManagement.Application.Abstractions.Messaging;
 
 namespace GymManagement.Application.Features.Enrollments.Events;
 
 public sealed record EnrollmentCreatedEvent(
     int ClientId,
+    string ClientEmail,
+    string ClientName,
     int ClassId,
     DateTime RegistrationTime) : IEvent
 {

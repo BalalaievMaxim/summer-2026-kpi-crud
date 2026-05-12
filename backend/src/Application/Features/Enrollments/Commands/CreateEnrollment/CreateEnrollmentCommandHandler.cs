@@ -18,8 +18,8 @@ public sealed class CreateEnrollmentCommandHandler(
 {
     public async Task<int> Handle(CreateEnrollmentCommand command, CancellationToken cancellationToken = default)
     {
-        if (!await clientRepository.ExistsAsync(command.ClientId, cancellationToken))
-            throw new ClientNotFoundError(command.ClientId);
+        var client = await clientRepository.GetByIdAsync(command.ClientId, cancellationToken)
+            ?? throw new ClientNotFoundError(command.ClientId);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var activeMemberships = await membershipRepository.GetActiveMembershipsByClientAsync(command.ClientId, cancellationToken);
@@ -29,9 +29,17 @@ public sealed class CreateEnrollmentCommandHandler(
             throw new ClientHasNoActiveMembershipError(command.ClientId);
 
         var enrollment = await enrollmentFactory.CreateAsync(command.ClientId, command.ClassId, DateTimeOffset.UtcNow, cancellationToken);
-        var id = await enrollmentRepository.AddAsync(enrollment, cancellationToken);
 
-        await eventBus.PublishAsync(new EnrollmentCreatedEvent(command.ClientId, command.ClassId, DateTime.UtcNow), cancellationToken);
+        var @event = new EnrollmentCreatedEvent(
+            client.Id,
+            client.Email.Value,
+            client.Name.Value,
+            command.ClassId,
+            DateTime.UtcNow);
+
+        await eventBus.PublishAsync(@event, cancellationToken);
+
+        var id = await enrollmentRepository.AddAsync(enrollment, cancellationToken);
 
         return id;
     }

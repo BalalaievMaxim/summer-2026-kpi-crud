@@ -54,7 +54,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
-
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -91,8 +90,8 @@ builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<GymManagement.Application.Services.Interfaces.INotificationService, GymManagement.Infrastructure.Notifications.EmailNotificationService>();
 builder.Services.AddSingleton(typeof(GymManagement.Application.Abstractions.Logging.IAppLogger<>), typeof(GymManagement.Infrastructure.Logging.LoggerAdapter<>));
 
-builder.Services.AddSingleton<GymManagement.Infrastructure.Messaging.InMemoryEventBus>();
-builder.Services.AddSingleton<GymManagement.Application.Abstractions.Messaging.IEventBus>(sp => sp.GetRequiredService<GymManagement.Infrastructure.Messaging.InMemoryEventBus>());
+builder.Services.AddScoped<GymManagement.Infrastructure.Messaging.OutboxEventBus>();
+builder.Services.AddScoped<GymManagement.Application.Abstractions.Messaging.IEventBus>(sp => sp.GetRequiredService<GymManagement.Infrastructure.Messaging.OutboxEventBus>());
 builder.Services.AddHostedService<GymManagement.Infrastructure.Messaging.EventDispatcherBackgroundService>();
 builder.Services.AddScoped<GymManagement.Application.Abstractions.Messaging.IEventHandler<GymManagement.Application.Features.Enrollments.Events.EnrollmentCreatedEvent>, GymManagement.Application.Features.Enrollments.Events.Handlers.NotifyClientOnEnrollmentHandler>();
 
