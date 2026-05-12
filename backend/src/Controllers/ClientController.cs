@@ -48,16 +48,14 @@ public class ClientController(ITokenService tokenService) : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AuthResultDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Login(
         [FromBody] LoginDto dto,
-        [FromServices] IQueryHandler<LoginClientQuery, ClientDto> queryHandler,
+        [FromServices] IQueryHandler<LoginClientQuery, AuthResultDto> queryHandler,
         CancellationToken cancellationToken)
     {
-        var client = await queryHandler.Handle(new LoginClientQuery(dto.Email, dto.Password), cancellationToken);
-        var token = tokenService.CreateToken(client.ClientId, client.Email, "Client");
-        return Ok(new { clientId = client.ClientId, client.Name, client.Email, client.Phone, token });
+        var authResult = await queryHandler.Handle(new LoginClientQuery(dto.Email, dto.Password), cancellationToken);
+        return Ok(authResult);
     }
 
     [HttpPut("{clientId}")]

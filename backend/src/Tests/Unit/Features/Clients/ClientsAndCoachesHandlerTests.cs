@@ -6,6 +6,7 @@ using GymManagement.Application.Features.Clients.Commands.UpdateClient;
 using GymManagement.Application.Features.Coaches.Commands.DeleteCoach;
 using GymManagement.Application.Features.Coaches.Commands.RegisterCoach;
 using GymManagement.Application.Features.Coaches.Commands.UpdateCoachSpecialization;
+using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Clients.Errors;
 using GymManagement.Domain.Coaches;
@@ -21,6 +22,8 @@ public sealed class ClientsAndCoachesHandlerTests
     private readonly Mock<ICoachRepository> _coachRepoMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly TestPasswordHasher _passwordHasher = new();
+
+    private readonly Mock<ITokenService> _tokenServiceMock = new();
 
     [Fact]
     public async Task RegisterClient_EmailFree_Should_CreateAndReturnId()
@@ -56,7 +59,7 @@ public sealed class ClientsAndCoachesHandlerTests
     [Fact]
     public async Task LoginClient_ValidCredentials_Should_ReturnClientDto()
     {
-        var handler = new LoginClientQueryHandler(_clientRepoMock.Object, _passwordHasher);
+        var handler = new LoginClientQueryHandler(_clientRepoMock.Object, _passwordHasher, _tokenServiceMock.Object);
         var client = Client.Reconstitute(1, "John", "john@test.com", "+380671234567", _passwordHasher.Hash("pass1234"));
 
         _clientRepoMock.Setup(r => r.GetByEmailAsync("john@test.com", It.IsAny<CancellationToken>()))
@@ -71,7 +74,7 @@ public sealed class ClientsAndCoachesHandlerTests
     [Fact]
     public async Task LoginClient_WrongPassword_Should_ThrowDomainError()
     {
-        var handler = new LoginClientQueryHandler(_clientRepoMock.Object, _passwordHasher);
+        var handler = new LoginClientQueryHandler(_clientRepoMock.Object, _passwordHasher, _tokenServiceMock.Object);
         var client = Client.Reconstitute(1, "John", "john@test.com", "+380671234567", _passwordHasher.Hash("pass1234"));
 
         _clientRepoMock.Setup(r => r.GetByEmailAsync("john@test.com", It.IsAny<CancellationToken>()))

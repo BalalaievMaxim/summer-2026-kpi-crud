@@ -105,7 +105,7 @@ builder.Services.AddScoped<IQueryHandler<GetPendingInvoicesForClientQuery, List<
 builder.Services.AddScoped<IQueryHandler<GetMonthlyRevenueByPlanQuery, List<TotalMembershipRevenueRow>>, GetMonthlyRevenueByPlanQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateEnrollmentCommand, EnrollmentResultDto>, CreateEnrollmentCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<RegisterClientCommand, int>, RegisterClientCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<LoginClientQuery, ClientDto>, LoginClientQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<LoginClientQuery, AuthResultDto>, LoginClientQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdateClientCommand>, UpdateClientCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DeleteClientCommand>, DeleteClientCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetClientByIdQuery, ClientDto?>, GetClientByIdQueryHandler>();
