@@ -4,7 +4,7 @@ using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Services;
 using GymManagement.Application.Services.Interfaces;
 using GymManagement.Application.DTOs;
-using GymManagement.Application.Features.Auth.Commands.LoginClient;
+using GymManagement.Application.Features.Auth.Queries.LoginClient;
 using GymManagement.Application.Features.Classes.Commands.CreateClass;
 using GymManagement.Application.Features.Classes.Commands.DeleteClass;
 using GymManagement.Application.Features.Classes.Commands.RescheduleClass;
@@ -65,18 +65,15 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IMembershipRepositoryPort, MembershipRepository>();
 builder.Services.AddScoped<IMembershipPlanRepositoryPort, MembershipPlanRepository>();
-builder.Services.AddScoped<InvoiceRepository>();
-builder.Services.AddScoped<IInvoiceRepositoryPort>(sp => sp.GetRequiredService<InvoiceRepository>());
-builder.Services.AddScoped<IInvoiceAnalyticsRepository>(sp => sp.GetRequiredService<InvoiceRepository>());
+builder.Services.AddScoped<IInvoiceRepositoryPort, InvoiceRepository>();
+builder.Services.AddScoped<IInvoiceAnalyticsRepository, InvoiceAnalyticsRepository>();
 builder.Services.AddScoped<IClassTypeRepositoryPort, ClassTypeRepository>();
-builder.Services.AddScoped<ClassRepository>();
-builder.Services.AddScoped<IClassRepositoryPort>(sp => sp.GetRequiredService<ClassRepository>());
-builder.Services.AddScoped<IClassScheduleRepository>(sp => sp.GetRequiredService<ClassRepository>());
+builder.Services.AddScoped<IClassRepositoryPort, ClassRepository>();
+builder.Services.AddScoped<IClassScheduleRepository, ClassReadRepository>();
 builder.Services.AddScoped<IEnrollmentRepositoryPort, EnrollmentRepository>();
 
-builder.Services.AddScoped<ClientRepository>();
-builder.Services.AddScoped<IClientRepository>(sp => sp.GetRequiredService<ClientRepository>());
-builder.Services.AddScoped<IClientAnalyticsRepository>(sp => sp.GetRequiredService<ClientRepository>());
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IClientAnalyticsRepository, ClientAnalyticsRepository>();
 
 builder.Services.AddScoped<ICoachRepository, CoachRepository>();
 
@@ -104,11 +101,11 @@ builder.Services.AddScoped<IQueryHandler<GetMembershipPlansQuery, List<Membershi
 builder.Services.AddScoped<IQueryHandler<GetMembershipPlanByIdQuery, MembershipPlanDto?>, GetMembershipPlanByIdQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateInvoiceCommand, int>, CreateInvoiceCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<MarkInvoicePaidCommand>, MarkInvoicePaidCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetPendingInvoicesForClientQuery, List<InvoiceRecord>>, GetPendingInvoicesForClientQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPendingInvoicesForClientQuery, List<InvoiceResponseDto>>, GetPendingInvoicesForClientQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetMonthlyRevenueByPlanQuery, List<TotalMembershipRevenueRow>>, GetMonthlyRevenueByPlanQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateEnrollmentCommand, EnrollmentResultDto>, CreateEnrollmentCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<RegisterClientCommand, int>, RegisterClientCommandHandler>();
-builder.Services.AddScoped<ICommandHandler<LoginClientCommand, ClientDto>, LoginClientCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<LoginClientQuery, ClientDto>, LoginClientQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdateClientCommand>, UpdateClientCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DeleteClientCommand>, DeleteClientCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetClientByIdQuery, ClientDto?>, GetClientByIdQueryHandler>();

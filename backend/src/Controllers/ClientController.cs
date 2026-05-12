@@ -1,6 +1,6 @@
 using GymManagement.Application.DTOs;
 using GymManagement.Application.Abstractions.Messaging;
-using GymManagement.Application.Features.Auth.Commands.LoginClient;
+using GymManagement.Application.Features.Auth.Queries.LoginClient;
 using GymManagement.Application.Features.Clients.Commands.DeleteClient;
 using GymManagement.Application.Features.Clients.Commands.RegisterClient;
 using GymManagement.Application.Features.Clients.Commands.UpdateClient;
@@ -52,10 +52,10 @@ public class ClientController(ITokenService tokenService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(
         [FromBody] LoginDto dto,
-        [FromServices] ICommandHandler<LoginClientCommand, ClientDto> commandHandler,
+        [FromServices] IQueryHandler<LoginClientQuery, ClientDto> queryHandler,
         CancellationToken cancellationToken)
     {
-        var client = await commandHandler.Handle(new LoginClientCommand(dto.Email, dto.Password), cancellationToken);
+        var client = await queryHandler.Handle(new LoginClientQuery(dto.Email, dto.Password), cancellationToken);
         var token = tokenService.CreateToken(client.ClientId, client.Email, "Client");
         return Ok(new { clientId = client.ClientId, client.Name, client.Email, client.Phone, token });
     }
