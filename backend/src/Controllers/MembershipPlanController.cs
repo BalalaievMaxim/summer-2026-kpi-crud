@@ -1,6 +1,9 @@
 using GymManagement.Application.DTOs;
-using GymManagement.Application.Services.Interfaces;
-using GymManagement.Domain.Shared;
+using GymManagement.Application.Abstractions.Messaging;
+using GymManagement.Application.Features.MembershipPlans.Commands.CreateMembershipPlan;
+using GymManagement.Application.Features.MembershipPlans.Commands.DeleteMembershipPlan;
+using GymManagement.Application.Features.MembershipPlans.Queries.GetMembershipPlanById;
+using GymManagement.Application.Features.MembershipPlans.Queries.GetMembershipPlans;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,75 +12,50 @@ namespace GymManagement.API.Controllers;
 [ApiController]
 [Route("/api/v1/membership-plans")]
 [Authorize]
-public sealed class MembershipPlanController(IMembershipPlanService membershipPlanService) : ControllerBase
+public sealed class MembershipPlanController : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> CreatePlan([FromBody] CreateMembershipPlanDto dto)
+    public async Task<IActionResult> CreatePlan(
+        [FromBody] CreateMembershipPlanDto dto,
+        [FromServices] ICommandHandler<CreateMembershipPlanCommand> commandHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            await membershipPlanService.CreatePlanAsync(dto);
-            return StatusCode(201, "Membership plan created successfully.");
-        }
-        catch (DomainError ex)
-        {
-            return BadRequest(new { code = ex.Code, error = ex.Message });
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, new { error = "Unable to create membership plan." });
-        }
+        await commandHandler.Handle(new CreateMembershipPlanCommand(dto.Name, dto.DurationMonth, dto.Price), cancellationToken);
+        return StatusCode(201, "Membership plan created successfully.");
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeletePlan(int id)
+    public async Task<IActionResult> DeletePlan(
+        int id,
+        [FromServices] ICommandHandler<DeleteMembershipPlanCommand> commandHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            await membershipPlanService.DeleteUnusedPlanAsync(id);
-            return NoContent();
-        }
-        catch (DomainError ex)
-        {
-            return ex.Code.EndsWith(".NotFound", StringComparison.Ordinal)
-                ? NotFound(new { code = ex.Code, error = ex.Message })
-                : Conflict(new { code = ex.Code, error = ex.Message });
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, new { error = "Unable to delete membership plan." });
-        }
+        await commandHandler.Handle(new DeleteMembershipPlanCommand(id), cancellationToken);
+        return NoContent();
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<MembershipPlanDto>>> GetPlans([FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
+    public async Task<ActionResult<List<MembershipPlanDto>>> GetPlans(
+        [FromQuery] decimal? minPrice,
+        [FromQuery] decimal? maxPrice,
+        [FromServices] IQueryHandler<GetMembershipPlansQuery, List<MembershipPlanDto>> queryHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            var plans = await membershipPlanService.GetPlansAsync(minPrice, maxPrice);
-            return Ok(plans);
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, new { error = "Unable to load membership plans." });
-        }
+        var plans = await queryHandler.Handle(new GetMembershipPlansQuery(minPrice, maxPrice), cancellationToken);
+        return Ok(plans);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<MembershipPlanDto>> GetPlan(int id)
+    public async Task<ActionResult<MembershipPlanDto>> GetPlan(
+        int id,
+        [FromServices] IQueryHandler<GetMembershipPlanByIdQuery, MembershipPlanDto?> queryHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            var plan = await membershipPlanService.GetPlanByIdAsync(id);
+        var plan = await queryHandler.Handle(new GetMembershipPlanByIdQuery(id), cancellationToken);
 
-            if (plan is null)
-                return NotFound($"Plan with ID {id} not found.");
+        if (plan is null)
+            return NotFound($"Plan with ID {id} not found.");
 
-            return Ok(plan);
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, new { error = "Unable to load membership plan." });
-        }
+        return Ok(plan);
     }
 }
