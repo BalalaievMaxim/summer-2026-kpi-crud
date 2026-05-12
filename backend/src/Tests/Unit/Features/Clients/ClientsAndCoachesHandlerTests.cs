@@ -28,16 +28,21 @@ public sealed class ClientsAndCoachesHandlerTests
     [Fact]
     public async Task RegisterClient_EmailFree_Should_CreateAndReturnId()
     {
-        var handler = new RegisterClientCommandHandler(_clientRepoMock.Object, _passwordHasher);
+        var handler = new RegisterClientCommandHandler(_clientRepoMock.Object, _passwordHasher, _tokenServiceMock.Object);
 
         _clientRepoMock.Setup(r => r.ExistsByEmailAsync("john@test.com", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _clientRepoMock.Setup(r => r.AddAsync(It.IsAny<Client>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(7);
+            
+        _tokenServiceMock.Setup(ts => ts.CreateToken(7, "john@test.com", "Client"))
+            .Returns("mocked-jwt-token");
 
         var result = await handler.Handle(new RegisterClientCommand("John", "john@test.com", "+380671234567", "pass1234"));
 
-        result.Should().Be(7);
+        result.ClientId.Should().Be(7);
+        result.Token.Should().Be("mocked-jwt-token"); 
+        
         _clientRepoMock.Verify(r => r.AddAsync(It.Is<Client>(client =>
             client.Name.Value == "John" &&
             client.Email.Value == "john@test.com"), It.IsAny<CancellationToken>()), Times.Once);
@@ -46,7 +51,7 @@ public sealed class ClientsAndCoachesHandlerTests
     [Fact]
     public async Task RegisterClient_EmailTaken_Should_ThrowDomainError()
     {
-        var handler = new RegisterClientCommandHandler(_clientRepoMock.Object, _passwordHasher);
+        var handler = new RegisterClientCommandHandler(_clientRepoMock.Object, _passwordHasher, _tokenServiceMock.Object);
 
         _clientRepoMock.Setup(r => r.ExistsByEmailAsync("taken@test.com", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -55,7 +60,6 @@ public sealed class ClientsAndCoachesHandlerTests
 
         await act.Should().ThrowAsync<ClientEmailAlreadyExistsError>();
     }
-
     [Fact]
     public async Task LoginClient_ValidCredentials_Should_ReturnClientDto()
     {

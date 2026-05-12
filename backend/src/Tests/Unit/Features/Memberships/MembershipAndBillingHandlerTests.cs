@@ -249,7 +249,7 @@ public sealed class MembershipAndBillingHandlerTests
         _unitOfWorkMock.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
+   [Fact]
     public async Task CreateEnrollment_ValidData_Should_CreateAndReturnResult()
     {
         var handler = new CreateEnrollmentCommandHandler(
@@ -265,9 +265,8 @@ public sealed class MembershipAndBillingHandlerTests
 
         var result = await handler.Handle(new CreateEnrollmentCommand(1, 1));
 
-        result.EnrollmentId.Should().Be(42);
-        result.ClientId.Should().Be(1);
-        result.ClassId.Should().Be(1);
+        result.Should().Be(42);
+
         _enrollmentRepoMock.Verify(r => r.AddAsync(It.Is<Enrollment>(enrollment =>
             enrollment.ClientId == 1 &&
             enrollment.ClassId == 1), It.IsAny<CancellationToken>()), Times.Once);

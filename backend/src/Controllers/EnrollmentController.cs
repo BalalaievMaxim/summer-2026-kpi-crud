@@ -18,10 +18,10 @@ public sealed class EnrollmentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> EnrollClient(
         [FromBody] CreateEnrollmentDto dto,
-        [FromServices] ICommandHandler<CreateEnrollmentCommand, EnrollmentResultDto> commandHandler,
+        [FromServices] ICommandHandler<CreateEnrollmentCommand, int> commandHandler,
         CancellationToken cancellationToken)
     {
         var enrollment = await commandHandler.Handle(new CreateEnrollmentCommand(dto.ClientId, dto.ClassId), cancellationToken);
-        return CreatedAtAction(nameof(EnrollClient), new { id = enrollment.EnrollmentId }, enrollment);
+        return CreatedAtAction(nameof(EnrollClient), new { enrollmentId = enrollment }, enrollment);
     }
 }

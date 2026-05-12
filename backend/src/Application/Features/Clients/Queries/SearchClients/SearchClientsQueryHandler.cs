@@ -1,19 +1,16 @@
 using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Features.Clients.ReadModels;
+using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Clients;
 using GymManagement.Domain.Shared;
 
 namespace GymManagement.Application.Features.Clients.Queries.SearchClients;
 
-public sealed class SearchClientsQueryHandler(IClientRepository clientRepository)
+public sealed class SearchClientsQueryHandler(IClientReadRepository clientReadRepository)
     : IQueryHandler<SearchClientsQuery, IReadOnlyList<ClientSummaryDto>>
 {
     public async Task<IReadOnlyList<ClientSummaryDto>> Handle(SearchClientsQuery query, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(query.SearchTerm))
-            throw new DomainValidationError("Client.EmptySearchTerm", "Search term cannot be empty.");
-
-        var clients = await clientRepository.SearchAsync(query.SearchTerm, cancellationToken);
-        return clients.Select(ClientMappings.ToSummaryDto).ToList();
+        return await clientReadRepository.SearchAsync(query.SearchTerm, cancellationToken);
     }
 }

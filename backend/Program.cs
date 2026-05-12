@@ -76,6 +76,7 @@ builder.Services.AddScoped<IEnrollmentRepositoryPort, EnrollmentRepository>();
 
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IClientAnalyticsRepository, ClientAnalyticsRepository>();
+builder.Services.AddScoped<IClientReadRepository, ClientReadRepository>();
 builder.Services.AddScoped<ICoachReadRepository, CoachReadRepository>();
 
 builder.Services.AddScoped<ICoachRepository, CoachRepository>();
@@ -106,8 +107,8 @@ builder.Services.AddScoped<ICommandHandler<CreateInvoiceCommand, int>, CreateInv
 builder.Services.AddScoped<ICommandHandler<MarkInvoicePaidCommand>, MarkInvoicePaidCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPendingInvoicesForClientQuery, List<InvoiceResponseDto>>, GetPendingInvoicesForClientQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetMonthlyRevenueByPlanQuery, List<TotalMembershipRevenueRow>>, GetMonthlyRevenueByPlanQueryHandler>();
-builder.Services.AddScoped<ICommandHandler<CreateEnrollmentCommand, EnrollmentResultDto>, CreateEnrollmentCommandHandler>();
-builder.Services.AddScoped<ICommandHandler<RegisterClientCommand, int>, RegisterClientCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<RegisterClientCommand, AuthResultDto>, RegisterClientCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateEnrollmentCommand, int>, CreateEnrollmentCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<LoginClientQuery, AuthResultDto>, LoginClientQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdateClientCommand>, UpdateClientCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DeleteClientCommand>, DeleteClientCommandHandler>();
