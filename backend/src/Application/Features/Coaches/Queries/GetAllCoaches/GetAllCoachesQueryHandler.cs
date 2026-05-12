@@ -1,17 +1,17 @@
 using GymManagement.Application.Abstractions.Messaging;
 using GymManagement.Application.Features.Coaches.ReadModels;
+using GymManagement.Application.Services.Interfaces;
 using GymManagement.Domain.Coaches;
 
 namespace GymManagement.Application.Features.Coaches.Queries.GetAllCoaches;
 
-public sealed class GetAllCoachesQueryHandler(ICoachRepository coachRepository)
+public sealed class GetAllCoachesQueryHandler(ICoachReadRepository coachReadRepository)
     : IQueryHandler<GetAllCoachesQuery, IReadOnlyList<CoachSummaryDto>>
 {
     public async Task<IReadOnlyList<CoachSummaryDto>> Handle(
         GetAllCoachesQuery query,
         CancellationToken cancellationToken = default)
     {
-        var coaches = await coachRepository.GetAllAsync(cancellationToken);
-        return coaches.Select(CoachMappings.ToSummaryDto).ToList();
+        return await coachReadRepository.GetAllSummaryAsync(cancellationToken);
     }
 }
