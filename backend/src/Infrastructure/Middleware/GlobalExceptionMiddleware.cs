@@ -80,8 +80,6 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
     private static bool IsConflict(string code)
         => code.EndsWith(".AlreadyExists", StringComparison.Ordinal)
            || code.EndsWith(".InUse", StringComparison.Ordinal)
-           || code.Contains(".HasActive", StringComparison.Ordinal)
-           || code.Contains(".HasFuture", StringComparison.Ordinal)
            || code.Contains(".Conflict", StringComparison.Ordinal)
            || code.EndsWith(".ActiveExists", StringComparison.Ordinal)
            || code.EndsWith(".AlreadyEnrolled", StringComparison.Ordinal);

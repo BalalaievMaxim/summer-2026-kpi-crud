@@ -1,7 +1,11 @@
 using GymManagement.Application.DTOs;
-using GymManagement.Application.Services.Interfaces;
-using GymManagement.Domain.Coaches.Errors;
-using GymManagement.Domain.Shared;
+using GymManagement.Application.Abstractions.Messaging;
+using GymManagement.Application.Features.Coaches.Commands.DeleteCoach;
+using GymManagement.Application.Features.Coaches.Commands.RegisterCoach;
+using GymManagement.Application.Features.Coaches.Commands.UpdateCoachSpecialization;
+using GymManagement.Application.Features.Coaches.Queries.GetCoachById;
+using GymManagement.Application.Features.Coaches.Queries.GetCoachesBySpecialization;
+using GymManagement.Application.Features.Coaches.ReadModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,63 +14,63 @@ namespace GymManagement.Presentation.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class CoachController(ICoachService coachService) : ControllerBase
+public class CoachController : ControllerBase
 {
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(
+        int id,
+        [FromServices] IQueryHandler<GetCoachByIdQuery, CoachDto?> queryHandler,
+        CancellationToken cancellationToken)
     {
-        var coach = await coachService.GetByIdAsync(id);
+        var coach = await queryHandler.Handle(new GetCoachByIdQuery(id), cancellationToken);
         if (coach is null) return NotFound();
-        return Ok(new { id = coach.Id, name = coach.Name.Value, email = coach.Email.Value, specialization = coach.Specialization.Value });
+        return Ok(coach);
     }
 
     [HttpGet("specialization/{specialization}")]
-    public async Task<IActionResult> GetBySpecialization(string specialization)
+    public async Task<IActionResult> GetBySpecialization(
+        string specialization,
+        [FromServices] IQueryHandler<GetCoachesBySpecializationQuery, IReadOnlyList<CoachSummaryDto>> queryHandler,
+        CancellationToken cancellationToken)
     {
-        var coaches = await coachService.GetBySpecializationAsync(specialization);
-        return Ok(coaches.Select(c => new { id = c.Id, name = c.Name.Value, specialization = c.Specialization.Value }));
+        var coaches = await queryHandler.Handle(new GetCoachesBySpecializationQuery(specialization), cancellationToken);
+        return Ok(coaches);
     }
 
     [HttpPost]
     [AllowAnonymous]
-    public async Task<IActionResult> Register([FromBody] CreateCoachDto dto)
+    public async Task<IActionResult> Register(
+        [FromBody] CreateCoachDto dto,
+        [FromServices] ICommandHandler<RegisterCoachCommand, int> commandHandler,
+        [FromServices] IQueryHandler<GetCoachByIdQuery, CoachDto?> queryHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            var coach = await coachService.RegisterCoachAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = coach.Id }, new
-            {
-                id = coach.Id,
-                name = coach.Name.Value,
-                email = coach.Email.Value,
-                specialization = coach.Specialization.Value
-            });
-        }
-        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+        var coachId = await commandHandler.Handle(
+            new RegisterCoachCommand(dto.Name, dto.Email, dto.Specialization, dto.Password),
+            cancellationToken);
+
+        var coach = await queryHandler.Handle(new GetCoachByIdQuery(coachId), cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id = coachId }, coach);
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(
+        int id,
+        [FromServices] ICommandHandler<DeleteCoachCommand> commandHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            await coachService.DeleteCoachAsync(id);
-            return NoContent();
-        }
-        catch (CoachNotFoundError ex) { return NotFound(new { code = ex.Code, error = ex.Message }); }
-        catch (CoachHasFutureClassesError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
-        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+        await commandHandler.Handle(new DeleteCoachCommand(id), cancellationToken);
+        return NoContent();
     }
 
     [HttpPatch("{id}/specialization")]
-    public async Task<IActionResult> UpdateSpecialization(int id, [FromBody] string specialization)
+    public async Task<IActionResult> UpdateSpecialization(
+        int id,
+        [FromBody] string specialization,
+        [FromServices] ICommandHandler<UpdateCoachSpecializationCommand> commandHandler,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            await coachService.UpdateSpecializationAsync(id, specialization);
-            return NoContent();
-        }
-        catch (CoachNotFoundError ex) { return NotFound(new { code = ex.Code, error = ex.Message }); }
-        catch (DomainError ex) { return BadRequest(new { code = ex.Code, error = ex.Message }); }
+        await commandHandler.Handle(new UpdateCoachSpecializationCommand(id, specialization), cancellationToken);
+        return NoContent();
     }
 }
