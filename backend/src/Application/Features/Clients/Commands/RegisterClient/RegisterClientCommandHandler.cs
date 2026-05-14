@@ -14,7 +14,9 @@ public sealed class RegisterClientCommandHandler(
     IPasswordHasher passwordHasher,
     ITokenService tokenService,
     INotificationService notificationService,
-    IAppLogger<RegisterClientCommandHandler> logger) : ICommandHandler<RegisterClientCommand, AuthResultDto>
+    IAppLogger<RegisterClientCommandHandler> logger,
+    IUnitOfWork unitOfWork
+    ) : ICommandHandler<RegisterClientCommand, AuthResultDto>
 {
     public async Task<AuthResultDto> Handle(RegisterClientCommand command, CancellationToken cancellationToken = default)
     {
@@ -45,6 +47,8 @@ public sealed class RegisterClientCommandHandler(
         {
             logger.LogWarning("Synchronous notification timed out for client {0}. Reason: {1}", clientId, ex.Message);
         }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AuthResultDto(
             clientId,
