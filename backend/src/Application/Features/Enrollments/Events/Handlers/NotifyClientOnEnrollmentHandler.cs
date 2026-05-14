@@ -3,6 +3,7 @@ using GymManagement.Application.Services.Interfaces;
 
 namespace GymManagement.Application.Features.Enrollments.Events.Handlers;
 
+[Idempotent]
 public sealed class NotifyClientOnEnrollmentHandler(INotificationService notificationService) : IEventHandler<EnrollmentCreatedEvent>
 {
     public async Task HandleAsync(EnrollmentCreatedEvent @event, CancellationToken cancellationToken = default)
