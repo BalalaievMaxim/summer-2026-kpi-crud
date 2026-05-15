@@ -45,8 +45,8 @@ public class ErrorHandlingTests : BaseIntegrationTest
             ClientId = client.ClientId, 
             PlanId = plan.PlanId, 
             IsActive = true, 
-            StartDate = DateOnly.FromDateTime(DateTime.Now),
-            EndDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(1))
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1))
         });
         await Context.SaveChangesAsync();
 

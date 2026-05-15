@@ -37,10 +37,9 @@ public sealed class CreateEnrollmentCommandHandler(
             command.ClassId,
             DateTime.UtcNow);
 
-        await eventBus.PublishAsync(@event, cancellationToken);
-
         var id = await enrollmentRepository.AddAsync(enrollment, cancellationToken);
-
+        await eventBus.PublishAsync(@event, cancellationToken);
+        
         return id;
     }
 }

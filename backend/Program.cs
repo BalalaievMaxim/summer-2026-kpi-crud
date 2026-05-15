@@ -53,6 +53,9 @@ using GymManagement.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using GymManagement.Application.Features.Enrollments.Events.Handlers;
+using GymManagement.Application.Features.Enrollments.Events;
+using GymManagement.Infrastructure.Messaging;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -93,7 +96,14 @@ builder.Services.AddSingleton(typeof(GymManagement.Application.Abstractions.Logg
 builder.Services.AddScoped<GymManagement.Infrastructure.Messaging.OutboxEventBus>();
 builder.Services.AddScoped<GymManagement.Application.Abstractions.Messaging.IEventBus>(sp => sp.GetRequiredService<GymManagement.Infrastructure.Messaging.OutboxEventBus>());
 builder.Services.AddHostedService<GymManagement.Infrastructure.Messaging.EventDispatcherBackgroundService>();
-builder.Services.AddScoped<GymManagement.Application.Abstractions.Messaging.IEventHandler<GymManagement.Application.Features.Enrollments.Events.EnrollmentCreatedEvent>, GymManagement.Application.Features.Enrollments.Events.Handlers.NotifyClientOnEnrollmentHandler>();
+builder.Services.AddScoped<NotifyClientOnEnrollmentHandler>();
+builder.Services.AddScoped<IEventHandler<EnrollmentCreatedEvent>>(sp => 
+{
+    var handler = sp.GetRequiredService<NotifyClientOnEnrollmentHandler>();
+    var context = sp.GetRequiredService<GymManagementContext>();
+    var logger = sp.GetRequiredService<ILogger<IdempotentEventHandlerDecorator<EnrollmentCreatedEvent>>>();
+    return new IdempotentEventHandlerDecorator<EnrollmentCreatedEvent>(handler, context, logger);
+});
 
 builder.Services.AddScoped<ICommandHandler<CreateClassCommand, int>, CreateClassCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<RescheduleClassCommand>, RescheduleClassCommandHandler>();

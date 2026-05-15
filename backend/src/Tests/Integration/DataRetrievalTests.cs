@@ -41,7 +41,7 @@ public class DataRetrievalTests : BaseIntegrationTest
         Context.AddRange(plan, client);
         await Context.SaveChangesAsync();
 
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         Context.Memberships.AddRange(
             new Membership { ClientId = client.ClientId, PlanId = plan.PlanId, IsActive = true, StartDate = today.AddMonths(-1), EndDate = today.AddMonths(5) },
